@@ -1,4 +1,4 @@
-# problem_solvers_hub
+# ProblemSolversHub
 
 A new Flutter project.
 
