@@ -43,3 +43,34 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Environment Variables & Secrets
+lib/.env
+lib/.env.local
+lib/.env.*.local
+.env
+.env.local
+.env.*.local
+*.env
+
+# Firebase Configuration (sensitive data)
+firebase_options.dart
+google-services.json
+GoogleService-Info.plist
+
+# API Keys and Credentials
+*.key
+*.pem
+*.p8
+*.p12
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

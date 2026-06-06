@@ -1,86 +1,91 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:problem_solvers_hub/core/router/app_router.dart';
 import 'package:problem_solvers_hub/core/theme/app_theme.dart';
-import 'package:problem_solvers_hub/ui/screens/create_post_screen.dart';
-import 'package:problem_solvers_hub/ui/screens/explore_screen.dart';
-import 'package:problem_solvers_hub/ui/screens/feed_screen.dart';
-import 'package:problem_solvers_hub/ui/screens/friends_screen.dart';
-import 'package:problem_solvers_hub/ui/screens/profile_screen.dart';
 
-class ProblemSolversHubApp extends StatelessWidget {
+class ProblemSolversHubApp extends ConsumerWidget {
   const ProblemSolversHubApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final goRouter = ref.watch(goRouterProvider);
+
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'ProblemSolvers Hub',
       theme: AppTheme.lightTheme,
-      home: const AppShell(),
+      routerConfig: goRouter,
     );
   }
 }
 
-class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+class AppShell extends ConsumerWidget {
+  const AppShell({super.key, required this.child});
 
-  @override
-  State<AppShell> createState() => _AppShellState();
-}
+  final Widget child;
 
-class _AppShellState extends State<AppShell> {
-  int _selectedIndex = 0;
-
-  static const List<Widget> _pages = <Widget>[
-    FeedScreen(),
-    ExploreScreen(),
-    CreatePostScreen(),
-    FriendsScreen(),
-    ProfileScreen(),
-  ];
-
-  void _onNavTap(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  int _locationToIndex(String location) {
+    if (location.startsWith('/explore')) return 1;
+    if (location.startsWith('/create')) return 2;
+    if (location.startsWith('/friends')) return 3;
+    if (location.startsWith('/profile')) return 4;
+    return 0;
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final location = GoRouterState.of(context).uri.path;
+    final currentIndex = _locationToIndex(location);
+
     return Scaffold(
-      body: SafeArea(child: _pages[_selectedIndex]),
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton(
-              onPressed: () => _onNavTap(2),
-              child: const Icon(Icons.add),
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      body: SafeArea(child: child),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onNavTap,
+        currentIndex: currentIndex,
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              context.go('/');
+              break;
+            case 1:
+              context.go('/explore');
+              break;
+            case 2:
+              context.go('/create');
+              break;
+            case 3:
+              context.go('/friends');
+              break;
+            case 4:
+              context.go('/profile');
+              break;
+          }
+        },
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppTheme.primary,
-        unselectedItemColor: AppTheme.textSecondary,
-        showUnselectedLabels: true,
-        items: const [
+        items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
-            label: 'Home',
+            activeIcon: Icon(Icons.home),
+            label: 'Feed',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.explore_outlined),
+            activeIcon: Icon(Icons.explore),
             label: 'Explore',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.add_box_outlined),
+            icon: Icon(Icons.add_circle_outline),
+            activeIcon: Icon(Icons.add_circle),
             label: 'Create',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.people_outline),
+            icon: Icon(Icons.people_outlined),
+            activeIcon: Icon(Icons.people),
             label: 'Friends',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
+            icon: Icon(Icons.person_outlined),
+            activeIcon: Icon(Icons.person),
             label: 'Profile',
           ),
         ],
@@ -88,3 +93,4 @@ class _AppShellState extends State<AppShell> {
     );
   }
 }
+

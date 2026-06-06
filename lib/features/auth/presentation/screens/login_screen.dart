@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:problem_solvers_hub/core/providers/service_providers.dart';
+import 'package:problem_solvers_hub/features/auth/domain/entities/user.dart';
+import 'package:problem_solvers_hub/features/auth/presentation/providers/auth_providers.dart';
 
-import '../bloc/auth_bloc.dart';
-
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -24,35 +25,81 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      context.read<AuthBloc>().add(
-        AuthLoginEvent(
+      final provider = ref.read(loginUsecaseProvider);
+      try {
+        await provider(
           email: _emailController.text.trim(),
           password: _passwordController.text,
-        ),
-      );
+        );
+        if (mounted) {
+          context.go('/');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
-  void _handleGoogleSignIn() {
-    context.read<AuthBloc>().add(const AuthGoogleSigninEvent());
+  void _handleGoogleSignIn() async {
+    final provider = ref.read(googleSigninUsecaseProvider);
+    try {
+      await provider();
+      if (mounted) {
+        context.go('/');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is AuthError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+    // Watch auth state to detect login completion
+    final authState = ref.watch(authProvider);
+
+    // Listen for auth state changes and navigate
+    ref.listen<AsyncValue<User?>>(authProvider, (prev, next) {
+      next.whenData((user) {
+        if (user != null && context.mounted) {
+          context.go('/');
+        }
+      });
+      next.maybeWhen(
+        error: (error, stack) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(error.toString())),
+            );
           }
         },
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
+        orElse: () {},
+      );
+    });
+
+    final isLoading = authState.isLoading;
+
+    return Scaffold(
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -68,96 +115,83 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 12),
                 Text(
                   'Solve Problems, Share Solutions',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyLarge?.copyWith(color: Colors.grey),
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.grey,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 60),
 
-                // Login Form
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      // Email Field
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          prefixIcon: Icon(Icons.email),
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                        validator: (value) {
-                          if (value?.isEmpty ?? true) {
-                            return 'Email is required';
-                          }
-                          if (!RegExp(
-                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                          ).hasMatch(value!)) {
-                            return 'Please enter a valid email';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
+                // Email Field
+                TextFormField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email),
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value?.isEmpty ?? true) {
+                      return 'Email is required';
+                    }
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(value!)) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
 
-                      // Password Field
-                      TextFormField(
-                        controller: _passwordController,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: const Icon(Icons.lock),
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-                        ),
-                        obscureText: _obscurePassword,
-                        validator: (value) {
-                          if (value?.isEmpty ?? true) {
-                            return 'Password is required';
-                          }
-                          if (value!.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
-                          return null;
-                        },
+                // Password Field
+                TextFormField(
+                  controller: _passwordController,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: const Icon(Icons.lock),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                       ),
-                      const SizedBox(height: 24),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                  ),
+                  obscureText: _obscurePassword,
+                  validator: (value) {
+                    if (value?.isEmpty ?? true) {
+                      return 'Password is required';
+                    }
+                    if (value!.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
 
-                      // Login Button
-                      BlocBuilder<AuthBloc, AuthState>(
-                        builder: (context, state) {
-                          final isLoading = state is AuthLoading;
-                          return SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: isLoading ? null : _handleLogin,
-                              child: isLoading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Text('Login'),
+                // Login Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : _handleLogin,
+                    child: isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
                             ),
-                          );
-                        },
-                      ),
-                    ],
+                          )
+                        : const Text('Login'),
                   ),
                 ),
 
@@ -181,18 +215,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 24),
 
                 // Google Sign-In Button
-                BlocBuilder<AuthBloc, AuthState>(
-                  builder: (context, state) {
-                    final isLoading = state is AuthLoading;
-                    return SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: isLoading ? null : _handleGoogleSignIn,
-                        icon: const Icon(Icons.g_translate),
-                        label: const Text('Sign in with Google'),
-                      ),
-                    );
-                  },
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: isLoading ? null : _handleGoogleSignIn,
+                    icon: const Icon(Icons.g_translate),
+                    label: const Text('Sign in with Google'),
+                  ),
                 ),
 
                 const SizedBox(height: 24),

@@ -1,0 +1,211 @@
+// Firestore Security Rules for ProblemSolversHub
+// Last Updated: May 2026
+// Version: 1.0.0
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ==================== UTILITY FUNCTIONS ====================
+    
+    /// Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    /// Check if user owns the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /// Check if user is admin (can be extended)
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    /// Validate email format
+    function isValidEmail(email) {
+      return email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+    }
+
+    /// Validate required fields exist
+    function hasFields(fields) {
+      let keys = resource.data.keys();
+      return fields.all(field => field in keys);
+    }
+
+    // ==================== USERS COLLECTION ====================
+    
+    match /users/{userId} {
+      /// Allow users to read their own profile
+      allow read: if isAuthenticated() && isOwner(userId);
+
+      /// Allow users to write their own profile (create/update)
+      allow write: if isAuthenticated() && isOwner(userId) &&
+        hasFields(['email', 'displayName', 'createdAt']) &&
+        request.resource.data.email == resource.data.email &&  // Email cannot be changed
+        request.resource.data.createdAt == resource.data.createdAt;  // CreatedAt cannot be changed
+
+      /// Allow listing users for search (read only)
+      allow list: if isAuthenticated();
+
+      // User profile subcollection rules
+      match /profile/{document=**} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow write: if isAuthenticated() && isOwner(userId);
+      }
+
+      // User settings subcollection rules
+      match /settings/{document=**} {
+        allow read: if isAuthenticated() && isOwner(userId);
+        allow write: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
+    // ==================== POSTS COLLECTION ====================
+    
+    match /posts/{postId} {
+      // Allow anyone to read published posts
+      allow read: if isAuthenticated() && (
+        resource.data.published == true ||
+        isOwner(resource.data.userId)
+      );
+
+      // Allow users to create posts
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid &&
+        hasFields(['title', 'content', 'userId', 'createdAt', 'published']) &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.title.size() <= 200 &&
+        request.resource.data.content.size() > 0 &&
+        request.resource.data.content.size() <= 5000;
+
+      // Allow users to update their own posts
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) &&
+        request.resource.data.userId == resource.data.userId &&  // userId cannot change
+        request.resource.data.createdAt == resource.data.createdAt;  // createdAt cannot change
+
+      // Allow users to delete their own posts
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+
+      // Comments subcollection rules
+      match /comments/{commentId} {
+        /// Allow authenticated users to read comments
+        allow read: if isAuthenticated();
+
+        /// Allow users to create comments
+        allow create: if isAuthenticated() &&
+          request.resource.data.userId == request.auth.uid &&
+          hasFields(['content', 'userId', 'createdAt']) &&
+          request.resource.data.content.size() > 0 &&
+          request.resource.data.content.size() <= 1000;
+
+        /// Allow users to update/delete their own comments
+        allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
+      }
+
+      // Likes subcollection rules (document per like)
+      match /likes/{likeId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() &&
+          request.resource.data.userId == request.auth.uid;
+        allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+      }
+    }
+
+    // ==================== PROBLEMS COLLECTION ====================
+    
+    match /problems/{problemId} {
+      /// Allow authenticated users to read problems
+      allow read: if isAuthenticated();
+
+      /// Allow users to create problems
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid &&
+        hasFields(['title', 'description', 'userId', 'createdAt']) &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.title.size() <= 200;
+
+      /// Allow users to update their own problems
+      allow update: if isAuthenticated() && isOwner(resource.data.userId) &&
+        request.resource.data.userId == resource.data.userId;
+
+      /// Allow users to delete their own problems
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+
+      // Solutions subcollection
+      match /solutions/{solutionId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() &&
+          request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
+      }
+    }
+
+    // ==================== NOTIFICATIONS COLLECTION ====================
+    
+    match /notifications/{notificationId} {
+      /// Allow users to read their own notifications
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+
+      /// Allow system to create notifications (use service account)
+      allow create: if isAuthenticated();
+
+      /// Allow users to update their own notifications (mark as read)
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+
+      /// Allow users to delete their own notifications
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    // ==================== FOLLOWERS COLLECTION ====================
+    
+    match /followers/{followerId} {
+      /// Allow authenticated users to read followers
+      allow read: if isAuthenticated();
+
+      /// Allow users to create follow relationships
+      allow create: if isAuthenticated() &&
+        request.resource.data.followerId == request.auth.uid &&
+        hasFields(['followerId', 'followingId', 'createdAt']);
+
+      /// Allow users to unfollow
+      allow delete: if isAuthenticated() && isOwner(resource.data.followerId);
+    }
+
+    // ==================== STORAGE RULES ====================
+    
+    match /storage/b/{bucket}/o {
+      // Profile pictures
+      match /users/{userId}/profile-picture/{allPaths=**} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() && isOwner(userId) &&
+          request.resource.contentType.matches('image/.*') &&
+          request.resource.size < 5 * 1024 * 1024;  // Max 5MB
+      }
+
+      // Post attachments
+      match /posts/{postId}/attachments/{allPaths=**} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() &&
+          request.resource.contentType.matches('image/.*') &&
+          request.resource.size < 10 * 1024 * 1024;  // Max 10MB
+      }
+
+      // Problem attachments
+      match /problems/{problemId}/attachments/{allPaths=**} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() &&
+          request.resource.size < 10 * 1024 * 1024;  // Max 10MB
+      }
+    }
+
+    // ==================== DEFAULT (DENY ALL) ====================
+    
+    /// Deny all by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

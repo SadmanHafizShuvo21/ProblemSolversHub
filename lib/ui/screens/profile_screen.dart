@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:problem_solvers_hub/features/auth/presentation/providers/auth_providers.dart';
 import 'package:problem_solvers_hub/ui/models/dummy_data.dart';
 import 'package:problem_solvers_hub/ui/widgets/section_title.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   Widget _buildStatItem(String label, String value) {
@@ -23,187 +26,213 @@ class ProfileScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Profile'),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.settings_outlined),
-          ),
-        ],
+    final authState = ref.watch(authProvider);
+
+    return authState.when(
+      loading: () => Scaffold(
+        appBar: AppBar(title: const Text('Profile')),
+        body: const Center(child: CircularProgressIndicator()),
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 24,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Container(
-                  height: 130,
-                  decoration: const BoxDecoration(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(24),
-                    ),
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  child: Column(
-                    children: [
-                      Transform.translate(
-                        offset: const Offset(0, -38),
-                        child: CircleAvatar(
-                          radius: 38,
-                          backgroundImage: NetworkImage(
-                            kFeedPosts.first.avatarUrl,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Aria Chen',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Competitive programmer · Solvers Group',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF64748B),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildStatItem('Solved', '132'),
-                          _buildStatItem('Discussions', '48'),
-                          _buildStatItem('Followers', '2.4k'),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+      error: (error, _) => Scaffold(
+        appBar: AppBar(title: const Text('Profile')),
+        body: Center(child: Text(error.toString())),
+      ),
+      data: (user) {
+        if (user == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Profile')),
+            body: const Center(child: Text('Authentication required.')),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: theme.scaffoldBackgroundColor,
+          appBar: AppBar(
+            title: const Text('Profile'),
+            actions: [
+              IconButton(
+                onPressed: () async {
+                  await ref.read(authProvider.notifier).logout();
+                  if (context.mounted) {
+                    context.go('/auth');
+                  }
+                },
+                icon: const Icon(Icons.logout_outlined),
+              ),
+            ],
           ),
-          const SizedBox(height: 22),
-          const SectionTitle(label: 'Badges'),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: kProfileBadges.map((badge) {
-              return Container(
-                width: (MediaQuery.of(context).size.width - 60) / 2,
-                padding: const EdgeInsets.all(16),
+          body: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            children: [
+              Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 24,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      badge.title,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
+                    Container(
+                      height: 130,
+                      decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(24),
+                        ),
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF4F46E5), Color(0xFF6366F1)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      badge.description,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF64748B),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      child: Column(
+                        children: [
+                          Transform.translate(
+                            offset: const Offset(0, -38),
+                            child: CircleAvatar(
+                              radius: 38,
+                              backgroundImage: NetworkImage(
+                                user.photoUrl ?? kFeedPosts.first.avatarUrl,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            user.displayName,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            user.email,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildStatItem('Solved', '132'),
+                              _buildStatItem('Discussions', '48'),
+                              _buildStatItem('Followers', '2.4k'),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 22),
-          const SectionTitle(label: 'Recent activity'),
-          ...kProfileActivities.map((activity) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 14),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 18,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
               ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
+              const SizedBox(height: 22),
+              const SectionTitle(label: 'Badges'),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: kProfileBadges.map((badge) {
+                  return Container(
+                    width: (MediaQuery.of(context).size.width - 60) / 2,
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE0E7FF),
-                      borderRadius: BorderRadius.circular(16),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(Icons.flash_on, color: Color(0xFF4F46E5)),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          activity.title,
+                          badge.title,
                           style: theme.textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 8),
                         Text(
-                          activity.subtitle,
+                          badge.description,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: const Color(0xFF64748B),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  Text(
-                    activity.timestamp,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF94A3B8),
-                    ),
-                  ),
-                ],
+                  );
+                }).toList(),
               ),
-            );
-          }).toList(),
-          const SizedBox(height: 10),
-        ],
-      ),
+              const SizedBox(height: 22),
+              const SectionTitle(label: 'Recent activity'),
+              ...kProfileActivities.map((activity) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 18,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE0E7FF),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(Icons.flash_on, color: Color(0xFF4F46E5)),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              activity.title,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              activity.subtitle,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        activity.timestamp,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
     );
   }
 }

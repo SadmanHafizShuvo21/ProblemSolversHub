@@ -4,10 +4,24 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/user_model.dart';
 
+/// Custom exception for authentication errors
+class AuthException implements Exception {
+  final String message;
+  final String? code;
+
+  AuthException(this.message, {this.code});
+
+  @override
+  String toString() => message;
+}
+
+/// Firebase Authentication Data Source
 class FirebaseAuthDatasource {
   final firebase_auth.FirebaseAuth _firebaseAuth;
   final FirebaseFirestore _firestore;
   final GoogleSignIn _googleSignIn;
+
+  static const String _usersCollection = 'users';
 
   FirebaseAuthDatasource({
     firebase_auth.FirebaseAuth? firebaseAuth,
@@ -25,15 +39,16 @@ class FirebaseAuthDatasource {
   }) async {
     try {
       final userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
-        email: email,
+        email: email.trim(),
         password: password,
       );
 
       final user = userCredential.user;
-      if (user == null) throw Exception('User creation failed');
+      if (user == null) throw AuthException('User creation failed');
 
       // Update display name
       await user.updateDisplayName(displayName);
+      await user.reload();
 
       // Create user document in Firestore
       final userModel = UserModel(
@@ -45,13 +60,15 @@ class FirebaseAuthDatasource {
       );
 
       await _firestore
-          .collection('users')
+          .collection(_usersCollection)
           .doc(user.uid)
           .set(userModel.toJson());
 
       return userModel;
     } on firebase_auth.FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
+    } catch (e) {
+      throw AuthException('Signup failed: $e');
     }
   }
 
@@ -62,20 +79,23 @@ class FirebaseAuthDatasource {
   }) async {
     try {
       final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
-        email: email,
+        email: email.trim(),
         password: password,
       );
 
       final user = userCredential.user;
-      if (user == null) throw Exception('Login failed');
+      if (user == null) throw AuthException('Login failed');
 
       // Fetch user data from Firestore
-      final doc = await _firestore.collection('users').doc(user.uid).get();
-      if (!doc.exists) throw Exception('User data not found');
+      final doc = await _firestore.collection(_usersCollection).doc(user.uid).get();
+      if (!doc.exists) throw AuthException('User data not found');
 
       return UserModel.fromJson(doc.data()!);
     } on firebase_auth.FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException('Login failed: $e');
     }
   }
 
@@ -83,7 +103,7 @@ class FirebaseAuthDatasource {
   Future<UserModel> signInWithGoogle() async {
     try {
       final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) throw Exception('Google sign-in cancelled');
+      if (googleUser == null) throw AuthException('Google sign-in cancelled');
 
       final googleAuth = await googleUser.authentication;
       final credential = firebase_auth.GoogleAuthProvider.credential(
@@ -95,10 +115,10 @@ class FirebaseAuthDatasource {
         credential,
       );
       final user = userCredential.user;
-      if (user == null) throw Exception('Google sign-in failed');
+      if (user == null) throw AuthException('Google sign-in failed');
 
       // Check if user exists in Firestore
-      final doc = await _firestore.collection('users').doc(user.uid).get();
+      final doc = await _firestore.collection(_usersCollection).doc(user.uid).get();
       if (doc.exists) {
         return UserModel.fromJson(doc.data()!);
       }
@@ -113,12 +133,13 @@ class FirebaseAuthDatasource {
       );
 
       await _firestore
-          .collection('users')
+          .collection(_usersCollection)
           .doc(user.uid)
           .set(userModel.toJson());
       return userModel;
     } catch (e) {
-      throw Exception('Google sign-in failed: $e');
+      if (e is AuthException) rethrow;
+      throw AuthException('Google sign-in failed: $e');
     }
   }
 
@@ -128,7 +149,7 @@ class FirebaseAuthDatasource {
       final user = _firebaseAuth.currentUser;
       if (user == null) return null;
 
-      final doc = await _firestore.collection('users').doc(user.uid).get();
+      final doc = await _firestore.collection(_usersCollection).doc(user.uid).get();
       if (!doc.exists) return null;
 
       return UserModel.fromJson(doc.data()!);
@@ -143,7 +164,7 @@ class FirebaseAuthDatasource {
       await _firebaseAuth.signOut();
       await _googleSignIn.signOut();
     } catch (e) {
-      throw Exception('Logout failed: $e');
+      throw AuthException('Logout failed: $e');
     }
   }
 
@@ -154,7 +175,7 @@ class FirebaseAuthDatasource {
 
       try {
         final doc = await _firestore
-            .collection('users')
+            .collection(_usersCollection)
             .doc(firebaseUser.uid)
             .get();
         if (!doc.exists) return null;
@@ -165,25 +186,59 @@ class FirebaseAuthDatasource {
     });
   }
 
-  /// Handle Firebase Auth exceptions
-  String _handleAuthException(firebase_auth.FirebaseAuthException e) {
+  /// Handle Firebase Auth exceptions and return user-friendly messages
+  AuthException _handleAuthException(firebase_auth.FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':
-        return 'No user found with this email';
+        return AuthException(
+          'No user found with this email address',
+          code: 'user-not-found',
+        );
       case 'wrong-password':
-        return 'Wrong password provided';
+        return AuthException(
+          'The password you entered is incorrect',
+          code: 'wrong-password',
+        );
       case 'invalid-email':
-        return 'Invalid email format';
+        return AuthException(
+          'Please enter a valid email address',
+          code: 'invalid-email',
+        );
       case 'user-disabled':
-        return 'User account has been disabled';
+        return AuthException(
+          'This account has been disabled',
+          code: 'user-disabled',
+        );
       case 'email-already-in-use':
-        return 'Email is already registered';
-      case 'operation-not-allowed':
-        return 'This operation is not allowed';
+        return AuthException(
+          'This email is already registered',
+          code: 'email-already-in-use',
+        );
       case 'weak-password':
-        return 'Password is too weak';
+        return AuthException(
+          'Password must be at least 6 characters',
+          code: 'weak-password',
+        );
+      case 'operation-not-allowed':
+        return AuthException(
+          'This operation is not allowed',
+          code: 'operation-not-allowed',
+        );
+      case 'too-many-requests':
+        return AuthException(
+          'Too many login attempts. Please try again later',
+          code: 'too-many-requests',
+        );
+      case 'network-request-failed':
+        return AuthException(
+          'Network error. Please check your connection',
+          code: 'network-request-failed',
+        );
       default:
-        return 'Authentication failed: ${e.message}';
+        return AuthException(
+          e.message ?? 'Authentication failed',
+          code: e.code,
+        );
     }
   }
 }

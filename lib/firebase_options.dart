@@ -30,10 +30,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.windows:
         return windows;
       case TargetPlatform.linux:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return linux;
       default:
         throw UnsupportedError(
           'DefaultFirebaseOptions are not supported for this platform.',
@@ -42,51 +39,61 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR_WEB_API_KEY',
-    appId: 'YOUR_WEB_APP_ID',
-    messagingSenderId: 'YOUR_WEB_MESSAGING_SENDER_ID',
-    projectId: 'your-project-id',
-    authDomain: 'your-project-id.firebaseapp.com',
-    databaseURL: 'https://your-project-id.firebaseio.com',
-    storageBucket: 'your-project-id.appspot.com',
-    measurementId: 'YOUR_WEB_MEASUREMENT_ID',
+    apiKey: 'AIzaSyCWK4GTERjJRMduV-aS1kTpSViSdroc-EM',
+    appId: '1:487224929410:web:4c9b55b5a4421c6d19989b',
+    messagingSenderId: '487224929410',
+    projectId: 'appproject2-f2777',
+    authDomain: 'appproject2-f2777.firebaseapp.com',
+    storageBucket: 'appproject2-f2777.firebasestorage.app',
+    measurementId: 'G-D03H3FKYDC',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_ANDROID_API_KEY',
-    appId: 'YOUR_ANDROID_APP_ID',
-    messagingSenderId: 'YOUR_ANDROID_MESSAGING_SENDER_ID',
-    projectId: 'your-project-id',
-    databaseURL: 'https://your-project-id.firebaseio.com',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyCqY7EzMV96cbQGLX4Zhyv1RnYhVRA_52U',
+    appId: '1:487224929410:android:aec84014dee014f719989b',
+    messagingSenderId: '487224929410',
+    projectId: 'appproject2-f2777',
+    storageBucket: 'appproject2-f2777.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR_IOS_API_KEY',
-    appId: 'YOUR_IOS_APP_ID',
-    messagingSenderId: 'YOUR_IOS_MESSAGING_SENDER_ID',
-    projectId: 'your-project-id',
-    databaseURL: 'https://your-project-id.firebaseio.com',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyBOKG_QqUB0l5bZ2TWJY_lBfkYmM-jpXZQ',
+    appId: '1:487224929410:ios:9289ccf82811981b19989b',
+    messagingSenderId: '487224929410',
+    projectId: 'appproject2-f2777',
+    storageBucket: 'appproject2-f2777.firebasestorage.app',
     iosBundleId: 'com.example.problemSolversHub',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'YOUR_MACOS_API_KEY',
-    appId: 'YOUR_MACOS_APP_ID',
-    messagingSenderId: 'YOUR_MACOS_MESSAGING_SENDER_ID',
-    projectId: 'your-project-id',
-    databaseURL: 'https://your-project-id.firebaseio.com',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyBOKG_QqUB0l5bZ2TWJY_lBfkYmM-jpXZQ',
+    appId: '1:487224929410:ios:9289ccf82811981b19989b',
+    messagingSenderId: '487224929410',
+    projectId: 'appproject2-f2777',
+    storageBucket: 'appproject2-f2777.firebasestorage.app',
     iosBundleId: 'com.example.problemSolversHub',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'YOUR_WINDOWS_API_KEY',
-    appId: 'YOUR_WINDOWS_APP_ID',
-    messagingSenderId: 'YOUR_WINDOWS_MESSAGING_SENDER_ID',
-    projectId: 'your-project-id',
-    databaseURL: 'https://your-project-id.firebaseio.com',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyCWK4GTERjJRMduV-aS1kTpSViSdroc-EM',
+    appId: '1:487224929410:web:608a29f2aed8f1c419989b',
+    messagingSenderId: '487224929410',
+    projectId: 'appproject2-f2777',
+    authDomain: 'appproject2-f2777.firebaseapp.com',
+    storageBucket: 'appproject2-f2777.firebasestorage.app',
+    measurementId: 'G-YH0CGVFFLC',
   );
+
+  /// Linux configuration uses web credentials as REST API fallback
+  /// Linux doesn't have native Firebase SDK support
+  static const FirebaseOptions linux = FirebaseOptions(
+    apiKey: 'AIzaSyCWK4GTERjJRMduV-aS1kTpSViSdroc-EM',
+    appId: '1:487224929410:web:4c9b55b5a4421c6d19989b',
+    messagingSenderId: '487224929410',
+    projectId: 'appproject2-f2777',
+    authDomain: 'appproject2-f2777.firebaseapp.com',
+    storageBucket: 'appproject2-f2777.firebasestorage.app',
+    measurementId: 'G-D03H3FKYDC',
+  );
+
 }

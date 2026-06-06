@@ -18,63 +18,27 @@ final getIt = GetIt.instance;
 
 void setupServiceLocator() {
   // ============= AUTH =============
-  // Data sources
-  getIt.registerSingleton<FirebaseAuthDatasource>(FirebaseAuthDatasource());
-
-  // Repositories
-  getIt.registerSingleton<AuthRepository>(
-    AuthRepositoryImpl(getIt<FirebaseAuthDatasource>()),
-  );
-
-  // Use cases
-  getIt.registerSingleton<SignupUsecase>(
-    SignupUsecase(getIt<AuthRepository>()),
-  );
-
-  getIt.registerSingleton<LoginUsecase>(LoginUsecase(getIt<AuthRepository>()));
-
-  getIt.registerSingleton<GoogleSigninUsecase>(
-    GoogleSigninUsecase(getIt<AuthRepository>()),
-  );
-
-  getIt.registerSingleton<LogoutUsecase>(
-    LogoutUsecase(getIt<AuthRepository>()),
-  );
-
-  getIt.registerSingleton<GetCurrentUserUsecase>(
-    GetCurrentUserUsecase(getIt<AuthRepository>()),
-  );
-
-  // Bloc
-  getIt.registerSingleton<AuthBloc>(
-    AuthBloc(
-      signupUsecase: getIt<SignupUsecase>(),
-      loginUsecase: getIt<LoginUsecase>(),
-      googleSigninUsecase: getIt<GoogleSigninUsecase>(),
-      logoutUsecase: getIt<LogoutUsecase>(),
-      getCurrentUserUsecase: getIt<GetCurrentUserUsecase>(),
-    ),
-  );
+  getIt.registerLazySingleton<FirebaseAuthDatasource>(() => FirebaseAuthDatasource());
+  getIt.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(getIt<FirebaseAuthDatasource>()));
+  getIt.registerLazySingleton<SignupUsecase>(() => SignupUsecase(getIt<AuthRepository>()));
+  getIt.registerLazySingleton<LoginUsecase>(() => LoginUsecase(getIt<AuthRepository>()));
+  getIt.registerLazySingleton<GoogleSigninUsecase>(() => GoogleSigninUsecase(getIt<AuthRepository>()));
+  getIt.registerLazySingleton<LogoutUsecase>(() => LogoutUsecase(getIt<AuthRepository>()));
+  getIt.registerLazySingleton<GetCurrentUserUsecase>(() => GetCurrentUserUsecase(getIt<AuthRepository>()));
+  getIt.registerLazySingleton<AuthBloc>(() => AuthBloc(
+        signupUsecase: getIt<SignupUsecase>(),
+        loginUsecase: getIt<LoginUsecase>(),
+        googleSigninUsecase: getIt<GoogleSigninUsecase>(),
+        logoutUsecase: getIt<LogoutUsecase>(),
+        getCurrentUserUsecase: getIt<GetCurrentUserUsecase>(),
+      ));
 
   // ============= POSTS =============
-  // Data sources
-  getIt.registerSingleton<FirebasePostsDatasource>(FirebasePostsDatasource());
-
-  // Repositories
-  getIt.registerSingleton<PostsRepository>(
-    PostsRepositoryImpl(getIt<FirebasePostsDatasource>()),
-  );
-
-  // Use cases
-  getIt.registerSingleton<CreatePostUsecase>(
-    CreatePostUsecase(getIt<PostsRepository>()),
-  );
-
-  // Blocs
-  getIt.registerSingleton<CreatePostBloc>(
-    CreatePostBloc(
-      createPostUsecase: getIt<CreatePostUsecase>(),
-      authBloc: getIt<AuthBloc>(),
-    ),
-  );
+  getIt.registerLazySingleton<FirebasePostsDatasource>(() => FirebasePostsDatasource());
+  getIt.registerLazySingleton<PostsRepository>(() => PostsRepositoryImpl(getIt<FirebasePostsDatasource>()));
+  getIt.registerLazySingleton<CreatePostUsecase>(() => CreatePostUsecase(getIt<PostsRepository>()));
+  getIt.registerLazySingleton<CreatePostBloc>(() => CreatePostBloc(
+        createPostUsecase: getIt<CreatePostUsecase>(),
+        authBloc: getIt<AuthBloc>(),
+      ));
 }

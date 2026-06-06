@@ -1,21 +1,70 @@
-# Quick Reference: Auth Feature Files
+# ProblemSolversHub Authentication - Quick Reference Guide
 
-## Core Files
+## 🚀 Quick Start Commands
 
-### Domain Layer (Business Logic)
+```bash
+# Install dependencies
+flutter pub get
 
+# Generate Riverpod code
+flutter pub run build_runner build
+
+# Run the app
+flutter run
+```
+
+---
+
+## 📱 Core Providers (Riverpod)
+
+### Watch Auth State
+```dart
+final authState = ref.watch(authStateProvider);  // Stream<User?>
+```
+
+### Get Current User
+```dart
+final user = ref.watch(currentUserProvider);  // FutureProvider<User?>
+```
+
+### Sign Up
+```dart
+ref.read(signUpProvider.notifier).signup(
+  email: 'user@example.com',
+  password: 'Pass123',
+  displayName: 'John Doe',
+);
+```
+
+### Login
+```dart
+ref.read(loginProvider.notifier).login(
+  email: 'user@example.com',
+  password: 'Pass123',
+);
+```
+
+### Google Sign-In
+```dart
+ref.read(googleSignInProvider.notifier).signInWithGoogle();
+```
+
+### Logout
+```dart
+ref.read(logoutProvider.notifier).logout();
+```
+
+---
+
+## 📁 File Structure
+
+### Domain Layer
 | File | Purpose |
 |------|---------|
-| `domain/entities/user.dart` | User business entity with id, email, displayName, photoUrl, createdAt |
-| `domain/repositories/auth_repository.dart` | Abstract interface defining auth operations |
-| `domain/usecases/signup_usecase.dart` | Signup business logic |
-| `domain/usecases/login_usecase.dart` | Login business logic |
-| `domain/usecases/google_signin_usecase.dart` | Google Sign-In business logic |
-| `domain/usecases/logout_usecase.dart` | Logout business logic |
-| `domain/usecases/get_current_user_usecase.dart` | Get current user stream |
+| `domain/entities/user.dart` | User entity |
+| `domain/repositories/auth_repository.dart` | Abstract auth interface |
 
-### Data Layer (Firebase Integration)
-
+### Data Layer
 | File | Purpose |
 |------|---------|
 | `data/models/user_model.dart` | Firestore serializable User model with toJson/fromJson |
