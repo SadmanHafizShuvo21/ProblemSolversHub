@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:problem_solvers_hub/features/auth/presentation/providers/auth_providers.dart';
+import 'package:problem_solvers_hub/core/providers/service_providers.dart';
+
 
 /// Splash/Auth Check Screen
 /// This screen is shown while determining if user is logged in
