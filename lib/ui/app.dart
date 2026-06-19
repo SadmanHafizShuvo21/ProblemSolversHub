@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:problem_solvers_hub/core/router/app_router.dart';
 import 'package:problem_solvers_hub/core/theme/app_theme.dart';
+import 'package:problem_solvers_hub/features/auth/presentation/providers/auth_providers.dart';
 
 class ProblemSolversHubApp extends ConsumerWidget {
   const ProblemSolversHubApp({super.key});
@@ -10,6 +11,39 @@ class ProblemSolversHubApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final goRouter = ref.watch(goRouterProvider);
+
+    // Listen to auth state changes for initial route navigation
+    ref.listen<AsyncValue<dynamic>>(authProvider, (previous, next) {
+      next.whenData((user) {
+        if (context.mounted && goRouter.routerDelegate.currentConfiguration.isNotEmpty) {
+          final currentPath = GoRouterState.of(context).uri.path;
+          
+          if (user != null) {
+            // User is logged in
+            debugPrint('✅ Auth state listener: User logged in - $currentPath');
+            if (currentPath == '/login' || currentPath == '/signup' || currentPath == '/auth') {
+              debugPrint('✅ Redirecting from auth page to /');
+              Future.microtask(() {
+                if (context.mounted) {
+                  goRouter.go('/');
+                }
+              });
+            }
+          } else {
+            // User is logged out
+            debugPrint('✅ Auth state listener: User logged out - $currentPath');
+            if (currentPath.startsWith('/') && currentPath != '/login' && currentPath != '/signup' && currentPath != '/auth' && currentPath != '/forgot-password') {
+              debugPrint('✅ Redirecting from protected route to /auth');
+              Future.microtask(() {
+                if (context.mounted) {
+                  goRouter.go('/auth');
+                }
+              });
+            }
+          }
+        }
+      });
+    });
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
@@ -93,4 +127,5 @@ class AppShell extends ConsumerWidget {
     );
   }
 }
+
 

@@ -13,53 +13,14 @@ import 'package:problem_solvers_hub/ui/screens/feed_screen.dart';
 import 'package:problem_solvers_hub/ui/screens/friends_screen.dart';
 import 'package:problem_solvers_hub/ui/screens/profile_screen.dart';
 
+/// Single stable GoRouter instance - kept as a global to prevent recreation
+late final GoRouter _stableRouter;
+
 /// Application Router Configuration
 class AppRouter {
-  static GoRouter createRouter(Ref ref) {
-    final authState = ref.watch(authProvider);
-
+  static GoRouter createRouter() {
     return GoRouter(
       initialLocation: '/',
-      redirect: (context, state) {
-        final isAuthenticated = authState.maybeWhen(
-          data: (user) => user != null,
-          orElse: () => false,
-        );
-
-        final path = state.uri.path;
-        final loggingIn = path == '/login';
-        final signingUp = path == '/signup';
-        final authLanding = path == '/auth';
-        final profileRoute = path == '/profile';
-
-        if (!isAuthenticated && profileRoute) {
-          return '/auth';
-        }
-
-        if (isAuthenticated && (loggingIn || signingUp || authLanding)) {
-          return '/profile';
-        }
-
-        return null;
-      },
-      errorBuilder: (context, state) => Scaffold(
-        appBar: AppBar(title: const Text('Error')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              const Text('Page Not Found'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => GoRouter.of(context).go('/'),
-                child: const Text('Go Back'),
-              ),
-            ],
-          ),
-        ),
-      ),
       routes: [
         ShellRoute(
           builder: (context, state, child) => AppShell(child: child),
@@ -112,11 +73,31 @@ class AppRouter {
           builder: (context, state) => const ForgotPasswordScreen(),
         ),
       ],
+      errorBuilder: (context, state) => Scaffold(
+        appBar: AppBar(title: const Text('Error')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text('Page Not Found'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => GoRouter.of(context).go('/'),
+                child: const Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
 
-/// Riverpod provider for the GoRouter
+/// Riverpod provider for stable GoRouter that doesn't recreate
 final goRouterProvider = Provider<GoRouter>((ref) {
-  return AppRouter.createRouter(ref);
+  // Create the router once and return the same instance
+  _stableRouter = AppRouter.createRouter();
+  return _stableRouter;
 });

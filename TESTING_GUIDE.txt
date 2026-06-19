@@ -1,0 +1,103 @@
+## Testing the Authentication Fix
+
+**The issue was**: After login, clicking the Profile tab showed the login page instead of user data.
+
+**Root causes fixed**:
+1. GoRouter was being recreated on auth changes, breaking navigation state
+2. Auth subscription was clearing logged-in user on temporary Firestore fetch errors
+3. No proper auth state listening at the app level for navigation
+
+**What was changed**:
+1. `lib/core/router/app_router.dart` - Made router stable (not recreated)
+2. `lib/ui/app.dart` - Added auth state listener for navigation management  
+3. `lib/features/auth/presentation/providers/auth_providers.dart` - Fixed subscription to preserve logged-in user
+
+---
+
+## Quick Test Steps
+
+1. **Build and Run**
+   ```bash
+   flutter pub get
+   flutter run -v
+   ```
+
+2. **Test Login**
+   - Open app
+   - Go to Login screen
+   - Enter valid Firebase credentials
+   - Tap "Sign In"
+   - Should see loading spinner
+   - Should navigate to Feed screen
+   - Check console for: `✅ Auth: Login successful`
+
+3. **Test Profile Access**  
+   - From Feed screen, tap "Profile" tab at bottom
+   - Should immediately show user profile
+   - Should NOT show "Please Login"
+   - Should show user's name, email, and stats from Firestore
+
+4. **Test App Restart**
+   - Keep app running after login
+   - Close app completely
+   - Reopen app
+   - Should show Feed screen (not login)
+   - Should be logged in
+   - Tap Profile tab - should show profile immediately
+
+5. **Test Logout**
+   - Go to Profile screen  
+   - Tap logout button
+   - Should redirect to Auth page
+   - Should see loading spinner briefly
+
+---
+
+## Console Output to Verify
+
+After successful login, you should see:
+```
+✅ Auth: Login successful for user@example.com
+✅ Auth: Auth state changed - user: user@example.com
+✅ Redirecting from auth page to /
+```
+
+When accessing Profile:
+```
+✅ Auth: Current user loaded: user@example.com
+```
+
+---
+
+## If Still Having Issues
+
+Check the console logs for:
+- `❌ Auth:` errors - indicates authentication problems
+- `⚠️ Auth:` warnings - indicates temporary issues  
+- `🔐 Auth:` info - tracks auth state changes
+
+Common issues and solutions:
+
+**Issue**: Still showing "Please Login" on Profile
+- **Check**: Is Firestore 'users' collection populated with user documents?
+- **Fix**: Verify user document exists after signup with structure: id, email, displayName, photoUrl, createdAt
+
+**Issue**: Not redirecting to Feed after login
+- **Check**: Are there any console errors?
+- **Fix**: Ensure Google Sign-In / Firebase Auth is properly configured
+
+**Issue**: App stuck on loading
+- **Check**: Look for timeout errors in console
+- **Fix**: Check Firebase initialization is complete before app renders
+
+---
+
+## Architecture Improvements
+
+The fix implements these best practices:
+- ✅ Single stable router instance (prevents navigation state loss)
+- ✅ Reactive auth state management (all screens see consistent state)
+- ✅ Subscription resilience (temporary errors don't clear auth state)
+- ✅ Proper lifecycle management (disposed subscriptions)
+- ✅ Comprehensive logging (visible in console for debugging)
+
