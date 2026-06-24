@@ -12,6 +12,7 @@ import 'package:problem_solvers_hub/ui/screens/explore_screen.dart';
 import 'package:problem_solvers_hub/ui/screens/feed_screen.dart';
 import 'package:problem_solvers_hub/ui/screens/friends_screen.dart';
 import 'package:problem_solvers_hub/ui/screens/profile_screen.dart';
+import 'package:problem_solvers_hub/ui/screens/activity_detail_screen.dart';
 
 /// Single stable GoRouter instance - kept as a global to prevent recreation
 late final GoRouter _stableRouter;
@@ -51,6 +52,16 @@ class AppRouter {
               builder: (context, state) => const ProfileScreen(),
             ),
           ],
+        ),
+        GoRoute(
+          path: '/activity',
+          name: 'activity',
+          builder: (context, state) {
+            final data = state.extra;
+            return ActivityDetailScreen(
+              activityData: data is Map<String, dynamic> ? data : <String, dynamic>{},
+            );
+          },
         ),
         GoRoute(
           path: '/auth',

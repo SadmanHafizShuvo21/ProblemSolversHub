@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:problem_solvers_hub/features/auth/presentation/providers/auth_providers.dart';
+import 'package:problem_solvers_hub/ui/screens/activity_detail_screen.dart';
 import 'package:problem_solvers_hub/ui/widgets/section_title.dart';
 
 final userPostsStreamProvider = StreamProvider.autoDispose.family<List<Map<String, dynamic>>, String>((ref, userId) {
@@ -12,7 +13,12 @@ final userPostsStreamProvider = StreamProvider.autoDispose.family<List<Map<Strin
       .snapshots()
       .map((snapshot) {
         final posts = snapshot.docs
-            .map((doc) => doc.data())
+            .map((doc) {
+        return {
+          ...doc.data() as Map<String, dynamic>,
+          'documentId': doc.id,
+        };
+      })
             .cast<Map<String, dynamic>>()
             .toList();
         posts.sort((a, b) {
@@ -104,8 +110,11 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildActivityItem(String title, String description, IconData icon) {
-    return Container(
+  Widget _buildActivityItem(String title, String description, IconData icon, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -151,6 +160,7 @@ class ProfileScreen extends ConsumerWidget {
           Icon(Icons.chevron_right, color: Colors.grey[400], size: 18),
         ],
       ),
+      )
     );
   }
 
@@ -529,6 +539,10 @@ class ProfileScreen extends ConsumerWidget {
                                       title,
                                       description,
                                       Icons.edit_note_outlined,
+                                      onTap: () => context.go(
+                                        '/activity',
+                                        extra: post,
+                                      ),
                                     ),
                                   );
                                 }).toList(),
