@@ -33,7 +33,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     if (_currentStep == 0 && step > _currentStep) {
       if (!_formData.isStep1Valid()) {
         _showValidationError(
-          'Please fill in all required fields in Problem Info',
+          'Please fill in all required fields:\n- Problem Name\n- Problem Link\n- At least one Platform\n- Difficulty\n- At least one Tag',
         );
         return;
       }
@@ -41,7 +41,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
     if (_currentStep == 1 && step > _currentStep) {
       if (!_formData.isStep2Valid()) {
-        _showValidationError('Please fill in all required fields in Approach');
+        _showValidationError(
+          'Please fill in all required fields:\n- Approach Explanation\n- At least one Time Complexity\n- At least one Space Complexity',
+        );
         return;
       }
     }
@@ -57,13 +59,15 @@ class _CreatePostPageState extends State<CreatePostPage> {
     if (_currentStep == 0) {
       if (!_formData.isStep1Valid()) {
         _showValidationError(
-          'Please fill in all required fields in Problem Info',
+          'Please fill in all required fields:\n- Problem Name\n- Problem Link\n- At least one Platform\n- Difficulty\n- At least one Tag',
         );
         return;
       }
     } else if (_currentStep == 1) {
       if (!_formData.isStep2Valid()) {
-        _showValidationError('Please fill in all required fields in Approach');
+        _showValidationError(
+          'Please fill in all required fields:\n- Approach Explanation\n- At least one Time Complexity\n- At least one Space Complexity',
+        );
         return;
       }
     }
@@ -90,7 +94,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
@@ -246,12 +250,27 @@ class _CreatePostPageState extends State<CreatePostPage> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      // Next Button
+                      // Next/Submit Button
                       if (_currentStep < 2)
                         Expanded(
                           child: ElevatedButton(
                             onPressed: _nextStep,
                             child: const Text('Next'),
+                          ),
+                        ),
+                      if (_currentStep == 2)
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: isLoading ? null : _submitPost,
+                            child: isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text('Submit'),
                           ),
                         ),
                     ],

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:problem_solvers_hub/shared/models/post.dart';
 
 class PostModel extends Post {
@@ -17,7 +18,11 @@ class PostModel extends Post {
     required super.comments,
     required super.views,
     required super.timestamp,
-  }) : super();
+    super.problemLink,        // ✅ add these
+    super.timeComplexity,     // ✅
+    super.spaceComplexity,    // ✅
+    super.keyLearnings,       // ✅
+  });
 
   /// Convert PostModel to JSON for Firestore
   Map<String, dynamic> toJson() {
@@ -36,6 +41,10 @@ class PostModel extends Post {
       'likes': likes,
       'comments': comments,
       'views': views,
+      'problemLink': problemLink,
+      'timeComplexity': timeComplexity,
+      'spaceComplexity': spaceComplexity,
+      'keyLearnings': keyLearnings,
       'timestamp': timestamp.toIso8601String(),
     };
   }
@@ -57,8 +66,20 @@ class PostModel extends Post {
       likes: json['likes'] as int? ?? 0,
       comments: json['comments'] as int? ?? 0,
       views: json['views'] as int? ?? 0,
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      problemLink: json['problemLink'] as String?,
+      timeComplexity: json['timeComplexity'] as String?,
+      spaceComplexity: json['spaceComplexity'] as String?,
+      keyLearnings:
+          List<String>.from(json['keyLearnings'] as List<dynamic>? ?? []),
+      timestamp: _parseDateTime(json['timestamp']),
     );
+  }
+
+  static DateTime _parseDateTime(dynamic json) {
+    if (json is DateTime) return json;
+    if (json is Timestamp) return json.toDate();
+    if (json is String) return DateTime.parse(json);
+    throw ArgumentError.value(json, 'timestamp', 'Unsupported timestamp format');
   }
 
   /// Convert to Post entity
@@ -100,6 +121,10 @@ class PostModel extends Post {
       comments: post.comments,
       views: post.views,
       timestamp: post.timestamp,
+      problemLink: post.problemLink,
+      timeComplexity: post.timeComplexity,
+      spaceComplexity: post.spaceComplexity,
+      keyLearnings: post.keyLearnings,
     );
   }
 }

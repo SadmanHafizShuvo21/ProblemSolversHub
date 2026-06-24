@@ -10,6 +10,7 @@ import 'package:problem_solvers_hub/features/auth/domain/usecases/signup_usecase
 import 'package:problem_solvers_hub/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:problem_solvers_hub/features/create/presentation/bloc/create_post_bloc.dart';
 import 'package:problem_solvers_hub/features/posts/data/datasources/firebase_posts_datasource.dart';
+import 'package:problem_solvers_hub/features/posts/data/datasources/firebase_problems_datasource.dart';
 import 'package:problem_solvers_hub/features/posts/domain/usecases/create_post_usecase.dart';
 import 'package:problem_solvers_hub/features/posts/data/repositories/posts_repository_impl.dart';
 import 'package:problem_solvers_hub/features/posts/domain/repositories/posts_repository.dart';
@@ -35,10 +36,12 @@ void setupServiceLocator() {
 
   // ============= POSTS =============
   getIt.registerLazySingleton<FirebasePostsDatasource>(() => FirebasePostsDatasource());
+  getIt.registerLazySingleton<FirebaseProblemsDataSource>(() => FirebaseProblemsDataSource());
   getIt.registerLazySingleton<PostsRepository>(() => PostsRepositoryImpl(getIt<FirebasePostsDatasource>()));
   getIt.registerLazySingleton<CreatePostUsecase>(() => CreatePostUsecase(getIt<PostsRepository>()));
   getIt.registerLazySingleton<CreatePostBloc>(() => CreatePostBloc(
         createPostUsecase: getIt<CreatePostUsecase>(),
         authBloc: getIt<AuthBloc>(),
+        problemsDataSource: getIt<FirebaseProblemsDataSource>(),
       ));
 }

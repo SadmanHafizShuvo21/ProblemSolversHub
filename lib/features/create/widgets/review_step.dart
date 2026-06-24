@@ -46,10 +46,31 @@ class ReviewStep extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   _buildReviewRow('Problem Name:', formData.problemName),
-                  _buildReviewRow('Platform:', formData.platform),
                   _buildReviewRow('Difficulty:', formData.difficulty),
                   _buildReviewRow('Link:', formData.problemLink),
                   const SizedBox(height: 12),
+                  // Platforms
+                  Text(
+                    'Platforms:',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    children: formData.platforms
+                        .map(
+                          (platform) => Chip(
+                            label: Text(platform),
+                            backgroundColor:
+                                theme.colorScheme.primaryContainer,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 12),
+                  // Tags
                   Text(
                     'Tags:',
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -63,7 +84,8 @@ class ReviewStep extends StatelessWidget {
                         .map(
                           (tag) => Chip(
                             label: Text(tag),
-                            backgroundColor: theme.colorScheme.primaryContainer,
+                            backgroundColor:
+                                theme.colorScheme.tertiaryContainer,
                           ),
                         )
                         .toList(),
@@ -95,10 +117,46 @@ class ReviewStep extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 12),
-                  _buildReviewRow('Time Complexity:', formData.timeComplexity),
-                  _buildReviewRow(
-                    'Space Complexity:',
-                    formData.spaceComplexity,
+                  // Time Complexities
+                  Text(
+                    'Time Complexities:',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    children: formData.timeComplexities
+                        .map(
+                          (complexity) => Chip(
+                            label: Text(complexity),
+                            backgroundColor:
+                                theme.colorScheme.primaryContainer,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 12),
+                  // Space Complexities
+                  Text(
+                    'Space Complexities:',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    children: formData.spaceComplexities
+                        .map(
+                          (complexity) => Chip(
+                            label: Text(complexity),
+                            backgroundColor:
+                                theme.colorScheme.secondaryContainer,
+                          ),
+                        )
+                        .toList(),
                   ),
                 ],
               ),
@@ -191,23 +249,6 @@ class ReviewStep extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 32),
-
-          // Submit Button
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: isLoading ? null : onSubmit,
-              child: isLoading
-                  ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Submit Post'),
-            ),
-          ),
-          const SizedBox(height: 16),
         ],
       ),
     );

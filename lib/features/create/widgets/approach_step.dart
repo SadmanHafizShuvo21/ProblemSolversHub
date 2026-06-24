@@ -18,22 +18,33 @@ class ApproachStep extends StatefulWidget {
 
 class _ApproachStepState extends State<ApproachStep> {
   late TextEditingController _approachController;
-  late TextEditingController _timeComplexityController;
-  late TextEditingController _spaceComplexityController;
   late TextEditingController _codeController;
   late List<TextEditingController> _learningControllers;
+
+  final List<String> commonTimeComplexities = [
+    'O(1)',
+    'O(log n)',
+    'O(n)',
+    'O(n log n)',
+    'O(n²)',
+    'O(n³)',
+    'O(2^n)',
+    'O(n!)',
+  ];
+
+  final List<String> commonSpaceComplexities = [
+    'O(1)',
+    'O(log n)',
+    'O(n)',
+    'O(n²)',
+    'O(2^n)',
+  ];
 
   @override
   void initState() {
     super.initState();
     _approachController = TextEditingController(
       text: widget.formData.approachExplanation,
-    );
-    _timeComplexityController = TextEditingController(
-      text: widget.formData.timeComplexity,
-    );
-    _spaceComplexityController = TextEditingController(
-      text: widget.formData.spaceComplexity,
     );
     _codeController = TextEditingController(text: widget.formData.codeSnippet);
 
@@ -50,8 +61,6 @@ class _ApproachStepState extends State<ApproachStep> {
   @override
   void dispose() {
     _approachController.dispose();
-    _timeComplexityController.dispose();
-    _spaceComplexityController.dispose();
     _codeController.dispose();
     for (var controller in _learningControllers) {
       controller.dispose();
@@ -61,14 +70,80 @@ class _ApproachStepState extends State<ApproachStep> {
 
   void _updateFormData() {
     widget.formData.approachExplanation = _approachController.text;
-    widget.formData.timeComplexity = _timeComplexityController.text;
-    widget.formData.spaceComplexity = _spaceComplexityController.text;
     widget.formData.codeSnippet = _codeController.text;
     widget.formData.keyLearnings = _learningControllers
         .map((c) => c.text)
         .where((text) => text.isNotEmpty)
         .toList();
     widget.onDataChanged(widget.formData);
+  }
+
+  void _addTimeComplexity() {
+    if (widget.formData.selectedTimeComplexity.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a time complexity first')),
+      );
+      return;
+    }
+
+    setState(() {
+      if (!widget.formData.timeComplexities
+          .contains(widget.formData.selectedTimeComplexity)) {
+        widget.formData.timeComplexities = [
+          ...widget.formData.timeComplexities,
+          widget.formData.selectedTimeComplexity,
+        ];
+        widget.formData.selectedTimeComplexity = '';
+        _updateFormData();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Time complexity already added')),
+        );
+      }
+    });
+  }
+
+  void _removeTimeComplexity(String complexity) {
+    setState(() {
+      widget.formData.timeComplexities = widget.formData.timeComplexities
+          .where((c) => c != complexity)
+          .toList();
+      _updateFormData();
+    });
+  }
+
+  void _addSpaceComplexity() {
+    if (widget.formData.selectedSpaceComplexity.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a space complexity first')),
+      );
+      return;
+    }
+
+    setState(() {
+      if (!widget.formData.spaceComplexities
+          .contains(widget.formData.selectedSpaceComplexity)) {
+        widget.formData.spaceComplexities = [
+          ...widget.formData.spaceComplexities,
+          widget.formData.selectedSpaceComplexity,
+        ];
+        widget.formData.selectedSpaceComplexity = '';
+        _updateFormData();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Space complexity already added')),
+        );
+      }
+    });
+  }
+
+  void _removeSpaceComplexity(String complexity) {
+    setState(() {
+      widget.formData.spaceComplexities = widget.formData.spaceComplexities
+          .where((c) => c != complexity)
+          .toList();
+      _updateFormData();
+    });
   }
 
   void _addLearningField() {
@@ -111,28 +186,157 @@ class _ApproachStepState extends State<ApproachStep> {
             onChanged: (_) => _updateFormData(),
           ),
           const SizedBox(height: 24),
-          // Time Complexity
-          TextField(
-            controller: _timeComplexityController,
-            decoration: const InputDecoration(
-              labelText: 'Time Complexity *',
-              hintText: 'e.g., O(n log n)',
-              border: OutlineInputBorder(),
+
+          // Time Complexity Selection with Add Button
+          Text(
+            'Time Complexity *',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            onChanged: (_) => _updateFormData(),
           ),
-          const SizedBox(height: 16),
-          // Space Complexity
-          TextField(
-            controller: _spaceComplexityController,
-            decoration: const InputDecoration(
-              labelText: 'Space Complexity *',
-              hintText: 'e.g., O(n)',
-              border: OutlineInputBorder(),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: widget.formData.selectedTimeComplexity.isEmpty
+                      ? null
+                      : widget.formData.selectedTimeComplexity,
+                  decoration: const InputDecoration(
+                    labelText: 'Select Time Complexity',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                  ),
+                  items: commonTimeComplexities
+                      .map(
+                        (complexity) => DropdownMenuItem(
+                          value: complexity,
+                          child: Text(complexity),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      widget.formData.selectedTimeComplexity = value ?? '';
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: _addTimeComplexity,
+                icon: const Icon(Icons.add),
+                label: const Text('Add'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Selected Time Complexities
+          if (widget.formData.timeComplexities.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              children: widget.formData.timeComplexities
+                  .map(
+                    (complexity) => Chip(
+                      label: Text(complexity),
+                      onDeleted: () => _removeTimeComplexity(complexity),
+                      backgroundColor:
+                          theme.colorScheme.primary.withValues(alpha: 0.2),
+                    ),
+                  )
+                  .toList(),
             ),
-            onChanged: (_) => _updateFormData(),
-          ),
+          if (widget.formData.timeComplexities.isEmpty)
+            Text(
+              'No time complexities added yet',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           const SizedBox(height: 24),
+
+          // Space Complexity Selection with Add Button
+          Text(
+            'Space Complexity *',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: widget.formData.selectedSpaceComplexity.isEmpty
+                      ? null
+                      : widget.formData.selectedSpaceComplexity,
+                  decoration: const InputDecoration(
+                    labelText: 'Select Space Complexity',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                  ),
+                  items: commonSpaceComplexities
+                      .map(
+                        (complexity) => DropdownMenuItem(
+                          value: complexity,
+                          child: Text(complexity),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      widget.formData.selectedSpaceComplexity = value ?? '';
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: _addSpaceComplexity,
+                icon: const Icon(Icons.add),
+                label: const Text('Add'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Selected Space Complexities
+          if (widget.formData.spaceComplexities.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              children: widget.formData.spaceComplexities
+                  .map(
+                    (complexity) => Chip(
+                      label: Text(complexity),
+                      onDeleted: () => _removeSpaceComplexity(complexity),
+                      backgroundColor:
+                          theme.colorScheme.tertiary.withValues(alpha: 0.2),
+                    ),
+                  )
+                  .toList(),
+            ),
+          if (widget.formData.spaceComplexities.isEmpty)
+            Text(
+              'No space complexities added yet',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          const SizedBox(height: 24),
+
           // Code Snippet
           Text(
             'Code Snippet',
@@ -157,6 +361,7 @@ class _ApproachStepState extends State<ApproachStep> {
             onChanged: (_) => _updateFormData(),
           ),
           const SizedBox(height: 24),
+
           // Key Learnings
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

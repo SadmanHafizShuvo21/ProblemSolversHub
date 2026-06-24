@@ -14,6 +14,10 @@ class Post {
   final int comments;
   final int views;
   final DateTime timestamp;
+  final String? problemLink; // Optional field for problem link
+  final String? timeComplexity; // Optional field for time complexity
+  final String? spaceComplexity; // Optional field for space complexity
+  final List<String>? keyLearnings; // Optional field for key learnings
 
   const Post({
     this.id,
@@ -30,6 +34,10 @@ class Post {
     required this.likes,
     required this.comments,
     required this.views,
+    this.problemLink, // Optional field for problem link
+    this.timeComplexity, // Optional field for time complexity
+    this.spaceComplexity, // Optional field for space complexity
+    this.keyLearnings, // Optional field for key learnings
     required this.timestamp,
   });
 }

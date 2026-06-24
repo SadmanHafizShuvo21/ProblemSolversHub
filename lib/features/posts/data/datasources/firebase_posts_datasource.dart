@@ -56,12 +56,13 @@ class FirebasePostsDatasource {
       final snapshot = await _firestore
           .collection(_collectionName)
           .where('userId', isEqualTo: userId)
-          .orderBy('timestamp', descending: true)
           .get();
 
-      return snapshot.docs
+      final posts = snapshot.docs
           .map((doc) => PostModel.fromJson(doc.data(), doc.id))
           .toList();
+      posts.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      return posts;
     } catch (e) {
       throw Exception('Failed to fetch user posts: $e');
     }
@@ -160,13 +161,14 @@ class FirebasePostsDatasource {
     return _firestore
         .collection(_collectionName)
         .where('userId', isEqualTo: userId)
-        .orderBy('timestamp', descending: true)
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
+        .map((snapshot) {
+          final posts = snapshot.docs
               .map((doc) => PostModel.fromJson(doc.data(), doc.id))
-              .toList(),
-        );
+              .toList();
+          posts.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          return posts;
+        });
   }
 
   /// Stream a single post by ID for real-time updates

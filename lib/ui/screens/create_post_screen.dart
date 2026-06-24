@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:problem_solvers_hub/core/theme/app_theme.dart';
 import 'package:problem_solvers_hub/ui/models/dummy_data.dart';
 import 'package:problem_solvers_hub/ui/widgets/post_card.dart';
@@ -64,23 +66,68 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     });
   }
 
-  void _submit() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Post submitted successfully!')),
-    );
-    setState(() {
-      _currentStep = 0;
-      _problemController.clear();
-      _linkController.clear();
-      _approachController.clear();
-      _codeController.clear();
-      _timeController.clear();
-      _spaceController.clear();
-      _tags.clear();
-      _learnings.clear();
-      _difficulty = 'Beginner';
-      _platform = 'LeetCode';
-    });
+  Future<void> _submit() async {
+    final currentUser = firebase_auth.FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login before submitting a post.')),
+      );
+      return;
+    }
+
+    final username = currentUser.displayName?.trim().isNotEmpty == true
+        ? currentUser.displayName!
+        : currentUser.email ?? 'Anonymous';
+    final posterAvatar = currentUser.photoURL ??
+        'https://via.placeholder.com/80';
+
+    final postData = {
+      'userId': currentUser.uid,
+      'userName': username,
+      'userAvatar': posterAvatar,
+      'problemTitle': _problemController.text.trim(),
+      'problemLink': _linkController.text.trim(),
+      'platform': _platform,
+      'difficulty': _difficulty,
+      'timeComplexity': _timeController.text.trim(),
+      'spaceComplexity': _spaceController.text.trim(),
+      'approachPreview': _approachController.text.trim(),
+      'approachFull': _approachController.text.trim(),
+      'codeSnippet': _codeController.text.trim(),
+      'tags': _tags,
+      'keyLearnings': _learnings,
+      'likes': 0,
+      'comments': 0,
+      'views': 0,
+      'timestamp': FieldValue.serverTimestamp(),
+    };
+
+    try {
+      await FirebaseFirestore.instance.collection('posts').add(postData);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post submitted successfully!')),
+      );
+      setState(() {
+        _currentStep = 0;
+        _problemController.clear();
+        _linkController.clear();
+        _approachController.clear();
+        _codeController.clear();
+        _timeController.clear();
+        _spaceController.clear();
+        _tags.clear();
+        _learnings.clear();
+        _difficulty = 'Beginner';
+        _platform = 'LeetCode';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to submit post: $e')),
+      );
+    }
   }
 
   @override

@@ -20,12 +20,14 @@ class _ProblemInfoStepState extends State<ProblemInfoStep> {
   late TextEditingController _problemNameController;
   late TextEditingController _problemLinkController;
 
-  final List<String> platforms = [
+  final List<String> availablePlatforms = [
     'LeetCode',
     'Codeforces',
     'HackerRank',
     'GeeksforGeeks',
     'AtCoder',
+    'CodeChef',
+    'Interviewbit',
   ];
   final List<String> difficulties = ['Easy', 'Medium', 'Hard'];
   final List<String> availableTags = [
@@ -39,6 +41,10 @@ class _ProblemInfoStepState extends State<ProblemInfoStep> {
     'Stack',
     'Queue',
     'Heap',
+    'Hash Map',
+    'Recursion',
+    'Sorting',
+    'Linked List',
   ];
 
   String? _urlError;
@@ -80,20 +86,74 @@ class _ProblemInfoStepState extends State<ProblemInfoStep> {
     });
   }
 
-  void _toggleTag(String tag) {
+  void _addPlatform() {
+    if (widget.formData.selectedPlatform.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a platform first')),
+      );
+      return;
+    }
+
     setState(() {
-      if (widget.formData.tags.contains(tag)) {
-        widget.formData.tags = widget.formData.tags
-            .where((t) => t != tag)
-            .toList();
-      } else if (widget.formData.tags.length < 5) {
-        widget.formData.tags = [...widget.formData.tags, tag];
+      if (!widget.formData.platforms
+          .contains(widget.formData.selectedPlatform)) {
+        widget.formData.platforms = [
+          ...widget.formData.platforms,
+          widget.formData.selectedPlatform,
+        ];
+        widget.formData.selectedPlatform = '';
+        _updateFormData();
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Maximum 5 tags allowed')));
-        return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Platform already added')),
+        );
       }
+    });
+  }
+
+  void _removePlatform(String platform) {
+    setState(() {
+      widget.formData.platforms =
+          widget.formData.platforms.where((p) => p != platform).toList();
+      _updateFormData();
+    });
+  }
+
+  void _addTag() {
+    if (widget.formData.selectedTag.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a tag first')),
+      );
+      return;
+    }
+
+    if (widget.formData.tags.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum 5 tags allowed')),
+      );
+      return;
+    }
+
+    setState(() {
+      if (!widget.formData.tags.contains(widget.formData.selectedTag)) {
+        widget.formData.tags = [
+          ...widget.formData.tags,
+          widget.formData.selectedTag,
+        ];
+        widget.formData.selectedTag = '';
+        _updateFormData();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tag already added')),
+        );
+      }
+    });
+  }
+
+  void _removeTag(String tag) {
+    setState(() {
+      widget.formData.tags =
+          widget.formData.tags.where((t) => t != tag).toList();
       _updateFormData();
     });
   }
@@ -117,6 +177,7 @@ class _ProblemInfoStepState extends State<ProblemInfoStep> {
             onChanged: (_) => _updateFormData(),
           ),
           const SizedBox(height: 16),
+
           // Problem Link
           TextField(
             controller: _problemLinkController,
@@ -128,28 +189,83 @@ class _ProblemInfoStepState extends State<ProblemInfoStep> {
             ),
             onChanged: _validateURL,
           ),
-          const SizedBox(height: 16),
-          // Platform Dropdown
-          DropdownButtonFormField<String>(
-            initialValue: widget.formData.platform,
-            decoration: const InputDecoration(
-              labelText: 'Platform *',
-              border: OutlineInputBorder(),
+          const SizedBox(height: 24),
+
+          // Platform Selection with Add Button
+          Text(
+            'Platforms *',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.bold,
             ),
-            items: platforms
-                .map(
-                  (platform) =>
-                      DropdownMenuItem(value: platform, child: Text(platform)),
-                )
-                .toList(),
-            onChanged: (value) {
-              setState(() {
-                widget.formData.platform = value ?? 'LeetCode';
-                _updateFormData();
-              });
-            },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: widget.formData.selectedPlatform.isEmpty
+                      ? null
+                      : widget.formData.selectedPlatform,
+                  decoration: const InputDecoration(
+                    labelText: 'Select Platform',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                  ),
+                  items: availablePlatforms
+                      .map(
+                        (platform) => DropdownMenuItem(
+                          value: platform,
+                          child: Text(platform),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      widget.formData.selectedPlatform = value ?? '';
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: _addPlatform,
+                icon: const Icon(Icons.add),
+                label: const Text('Add'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Selected Platforms
+          if (widget.formData.platforms.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              children: widget.formData.platforms
+                  .map(
+                    (platform) => Chip(
+                      label: Text(platform),
+                      onDeleted: () => _removePlatform(platform),
+                      backgroundColor:
+                          theme.colorScheme.primary.withValues(alpha: 0.2),
+                    ),
+                  )
+                  .toList(),
+            ),
+          if (widget.formData.platforms.isEmpty)
+            Text(
+              'No platforms added yet',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          const SizedBox(height: 24),
+
           // Difficulty Selector
           Text(
             'Difficulty *',
@@ -181,7 +297,8 @@ class _ProblemInfoStepState extends State<ProblemInfoStep> {
                 .toList(),
           ),
           const SizedBox(height: 24),
-          // Tags
+
+          // Tag Selection with Add Button
           Text(
             'Tags (max 5) *',
             style: theme.textTheme.bodyLarge?.copyWith(
@@ -189,25 +306,78 @@ class _ProblemInfoStepState extends State<ProblemInfoStep> {
             ),
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: availableTags
-                .map(
-                  (tag) => FilterChip(
-                    label: Text(tag),
-                    selected: widget.formData.tags.contains(tag),
-                    onSelected: (_) => _toggleTag(tag),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: widget.formData.selectedTag.isEmpty
+                      ? null
+                      : widget.formData.selectedTag,
+                  decoration: const InputDecoration(
+                    labelText: 'Select Tag',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                   ),
-                )
-                .toList(),
+                  items: availableTags
+                      .map(
+                        (tag) => DropdownMenuItem(
+                          value: tag,
+                          child: Text(tag),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      widget.formData.selectedTag = value ?? '';
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: _addTag,
+                icon: const Icon(Icons.add),
+                label: const Text('Add'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
-          Text(
-            'Selected: ${widget.formData.tags.isEmpty ? 'None' : widget.formData.tags.join(', ')} (${widget.formData.tags.length}/5)',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+
+          // Selected Tags
+          if (widget.formData.tags.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              children: widget.formData.tags
+                  .map(
+                    (tag) => Chip(
+                      label: Text(tag),
+                      onDeleted: () => _removeTag(tag),
+                      backgroundColor:
+                          theme.colorScheme.tertiary.withValues(alpha: 0.2),
+                    ),
+                  )
+                  .toList(),
             ),
-          ),
+          if (widget.formData.tags.isEmpty)
+            Text(
+              'No tags added yet (${widget.formData.tags.length}/5)',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          else
+            Text(
+              'Added: ${widget.formData.tags.length}/5 tags',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
         ],
       ),
     );
