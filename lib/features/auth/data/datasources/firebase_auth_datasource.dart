@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/user_model.dart';
@@ -165,6 +168,114 @@ class FirebaseAuthDatasource {
       await _googleSignIn.signOut();
     } catch (e) {
       throw AuthException('Logout failed: $e');
+    }
+  }
+
+  /// Upload a profile image and return its download URL
+  Future<String> uploadProfileImage({
+    required String userId,
+    required Uint8List bytes,
+  }) async {
+    try {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('users/$userId/profile_photo.jpg');
+
+      final uploadTask = storageRef.putData(
+        bytes,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      throw AuthException('Failed to upload profile image: $e');
+    }
+  }
+
+  /// Update user profile data in Auth and Firestore
+  Future<UserModel> updateUserProfile({
+    required String userId,
+    required String displayName,
+    String? photoUrl,
+    String? bio,
+    String? location,
+    String? website,
+    String? githubUsername,
+    String? twitterUsername,
+    String? leetcodeUsername,
+    String? linkedinUsername,
+    List<String>? skills,
+    required String theme,
+    required bool emailNotifications,
+    required bool pushNotifications,
+    required bool publicProfile,
+  }) async {
+    try {
+      final firebaseUser = _firebaseAuth.currentUser;
+      if (firebaseUser == null) {
+        throw AuthException('No authenticated user found');
+      }
+
+      final updateData = <String, dynamic>{
+        'displayName': displayName,
+        'bio': bio,
+        'location': location,
+        'website': website,
+        'githubUsername': githubUsername,
+        'twitterUsername': twitterUsername,
+        'leetcodeUsername': leetcodeUsername,
+        'linkedinUsername': linkedinUsername,
+        'skills': skills ?? [],
+        'theme': theme,
+        'emailNotifications': emailNotifications,
+        'pushNotifications': pushNotifications,
+        'publicProfile': publicProfile,
+      };
+
+      if (photoUrl != null) {
+        updateData['photoUrl'] = photoUrl;
+      }
+
+      await firebaseUser.updateDisplayName(displayName);
+      if (photoUrl != null) {
+        await firebaseUser.updatePhotoURL(photoUrl);
+      }
+      await firebaseUser.reload();
+
+      await _firestore.collection(_usersCollection).doc(userId).set(
+            updateData,
+            SetOptions(merge: true),
+          );
+
+      final doc = await _firestore.collection(_usersCollection).doc(userId).get();
+      if (!doc.exists) {
+        throw AuthException('User document not found after update');
+      }
+
+      return UserModel.fromJson(doc.data()!);
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException('Update failed: $e');
+    }
+  }
+
+  /// Delete user account and Firestore document
+  Future<void> deleteAccount() async {
+    try {
+      final firebaseUser = _firebaseAuth.currentUser;
+      if (firebaseUser == null) {
+        throw AuthException('No authenticated user found');
+      }
+
+      await firebaseUser.delete();
+      await _googleSignIn.signOut();
+      await _firestore.collection(_usersCollection).doc(firebaseUser.uid).delete();
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      throw AuthException('Account deletion failed: $e');
     }
   }
 

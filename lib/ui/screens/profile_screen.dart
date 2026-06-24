@@ -371,6 +371,25 @@ class ProfileScreen extends ConsumerWidget {
                                   fontSize: 22,
                                 ) ?? const TextStyle(),
                               ),
+                              if (user.location?.isNotEmpty == true) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  user.location!,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: const Color(0xFF64748B),
+                                  ) ?? const TextStyle(),
+                                ),
+                              ],
+                              if (user.bio?.isNotEmpty == true) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  user.bio!,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: const Color(0xFF475569),
+                                  ) ?? const TextStyle(),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                               const SizedBox(height: 4),
                               // Email
                               Text(
@@ -468,12 +487,7 @@ class ProfileScreen extends ConsumerWidget {
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              'Flutter',
-                              'Dart',
-                              'Firebase',
-                              'UI/UX',
-                              'API Design',
-                              'Database',
+                              ...user.skills.isNotEmpty ? user.skills : ['Flutter', 'Dart', 'Firebase', 'UI/UX', 'API Design', 'Database'],
                             ]
                                 .map(
                                   (skill) => Container(
@@ -570,11 +584,7 @@ class ProfileScreen extends ConsumerWidget {
                         width: double.infinity,
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Settings coming soon'),
-                              ),
-                            );
+                            context.push('/profile/settings');
                           },
                           icon: const Icon(Icons.settings_outlined),
                           label: const Text('Account Settings'),

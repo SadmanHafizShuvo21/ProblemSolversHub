@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/firebase_auth_datasource.dart';
@@ -33,6 +35,56 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<User?> getCurrentUser() {
     return datasource.getCurrentUser();
+  }
+
+  @override
+  Future<User> updateProfile({
+    required String userId,
+    required String displayName,
+    String? photoUrl,
+    String? bio,
+    String? location,
+    String? website,
+    String? githubUsername,
+    String? twitterUsername,
+    String? leetcodeUsername,
+    String? linkedinUsername,
+    List<String>? skills,
+    required String theme,
+    required bool emailNotifications,
+    required bool pushNotifications,
+    required bool publicProfile,
+  }) {
+    return datasource.updateUserProfile(
+      userId: userId,
+      displayName: displayName,
+      photoUrl: photoUrl,
+      bio: bio,
+      location: location,
+      website: website,
+      githubUsername: githubUsername,
+      twitterUsername: twitterUsername,
+      leetcodeUsername: leetcodeUsername,
+      linkedinUsername: linkedinUsername,
+      skills: skills,
+      theme: theme,
+      emailNotifications: emailNotifications,
+      pushNotifications: pushNotifications,
+      publicProfile: publicProfile,
+    );
+  }
+
+  @override
+  Future<String> uploadProfileImage({
+    required String userId,
+    required Uint8List bytes,
+  }) {
+    return datasource.uploadProfileImage(userId: userId, bytes: bytes);
+  }
+
+  @override
+  Future<void> deleteAccount() {
+    return datasource.deleteAccount();
   }
 
   @override

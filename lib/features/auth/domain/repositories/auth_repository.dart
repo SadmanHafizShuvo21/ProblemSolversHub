@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../entities/user.dart';
 
 abstract class AuthRepository {
@@ -16,6 +18,34 @@ abstract class AuthRepository {
 
   /// Get current logged-in user
   Future<User?> getCurrentUser();
+
+  /// Update the current user's profile
+  Future<User> updateProfile({
+    required String userId,
+    required String displayName,
+    String? photoUrl,
+    String? bio,
+    String? location,
+    String? website,
+    String? githubUsername,
+    String? twitterUsername,
+    String? leetcodeUsername,
+    String? linkedinUsername,
+    List<String>? skills,
+    required String theme,
+    required bool emailNotifications,
+    required bool pushNotifications,
+    required bool publicProfile,
+  });
+
+  /// Upload a profile image and return its public URL
+  Future<String> uploadProfileImage({
+    required String userId,
+    required Uint8List bytes,
+  });
+
+  /// Delete the current account
+  Future<void> deleteAccount();
 
   /// Logout
   Future<void> logout();

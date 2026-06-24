@@ -176,8 +176,105 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
+  Future<User?> refreshCurrentUser() async {
+    try {
+      final currentUser = await repository.getCurrentUser();
+      if (!isMounted) return null;
+      state = AsyncValue.data(currentUser);
+      return currentUser;
+    } catch (e, stackTrace) {
+      if (!isMounted) return null;
+      state = AsyncValue.error(
+        e is Exception ? e : Exception(e.toString()),
+        stackTrace,
+      );
+      return null;
+    }
+  }
+
+  Future<User?> updateProfile({
+    required String userId,
+    required String displayName,
+    String? photoUrl,
+    String? bio,
+    String? location,
+    String? website,
+    String? githubUsername,
+    String? twitterUsername,
+    String? leetcodeUsername,
+    String? linkedinUsername,
+    List<String>? skills,
+    required String theme,
+    required bool emailNotifications,
+    required bool pushNotifications,
+    required bool publicProfile,
+  }) async {
+    try {
+      final updatedUser = await repository.updateProfile(
+        userId: userId,
+        displayName: displayName,
+        photoUrl: photoUrl,
+        bio: bio,
+        location: location,
+        website: website,
+        githubUsername: githubUsername,
+        twitterUsername: twitterUsername,
+        leetcodeUsername: leetcodeUsername,
+        linkedinUsername: linkedinUsername,
+        skills: skills,
+        theme: theme,
+        emailNotifications: emailNotifications,
+        pushNotifications: pushNotifications,
+        publicProfile: publicProfile,
+      );
+      if (!isMounted) return null;
+      state = AsyncValue.data(updatedUser);
+      return updatedUser;
+    } catch (e, stackTrace) {
+      if (!isMounted) return null;
+      state = AsyncValue.error(
+        e is Exception ? e : Exception(e.toString()),
+        stackTrace,
+      );
+      return null;
+    }
+  }
+
+  Future<String> uploadProfileImage(Uint8List bytes) async {
+    try {
+      final currentUser = state.whenOrNull(data: (user) => user);
+      if (currentUser == null) {
+        throw Exception('No authenticated user found');
+      }
+      return await repository.uploadProfileImage(
+        userId: currentUser.id,
+        bytes: bytes,
+      );
+    } catch (e) {
+      throw Exception('Image upload failed: $e');
+    }
+  }
+
+  Future<void> deleteAccount() async {
+    try {
+      debugPrint('🔐 Auth: Delete account attempt');
+      state = const AsyncValue.loading();
+      await repository.deleteAccount();
+      if (!isMounted) return;
+      state = const AsyncValue.data(null);
+      debugPrint('✅ Auth: Account deleted');
+    } catch (e, stackTrace) {
+      if (!isMounted) return;
+      state = AsyncValue.error(
+        e is Exception ? e : Exception(e.toString()),
+        stackTrace,
+      );
+      debugPrint('❌ Auth: Delete account failed: $e');
+    }
+  }
+
   /// Check if the state notifier is still mounted and active
-  bool get isMounted => !this.mounted ? false : true;
+  bool get isMounted => !mounted ? false : true;
 
   @override
   void dispose() {

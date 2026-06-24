@@ -7,12 +7,13 @@ import 'package:problem_solvers_hub/features/auth/presentation/screens/forgot_pa
 import 'package:problem_solvers_hub/features/auth/presentation/screens/login_screen_new.dart';
 import 'package:problem_solvers_hub/features/auth/presentation/screens/signup_screen_new.dart';
 import 'package:problem_solvers_hub/ui/app.dart';
+import 'package:problem_solvers_hub/ui/screens/activity_detail_screen.dart';
 import 'package:problem_solvers_hub/ui/screens/create_post_screen.dart';
 import 'package:problem_solvers_hub/ui/screens/explore_screen.dart';
 import 'package:problem_solvers_hub/ui/screens/feed_screen.dart';
 import 'package:problem_solvers_hub/ui/screens/friends_screen.dart';
 import 'package:problem_solvers_hub/ui/screens/profile_screen.dart';
-import 'package:problem_solvers_hub/ui/screens/activity_detail_screen.dart';
+import 'package:problem_solvers_hub/ui/screens/profile_settings_screen.dart';
 
 /// Single stable GoRouter instance - kept as a global to prevent recreation
 late final GoRouter _stableRouter;
@@ -50,6 +51,11 @@ class AppRouter {
               path: '/profile',
               name: 'profile',
               builder: (context, state) => const ProfileScreen(),
+            ),
+            GoRoute(
+              path: '/profile/settings',
+              name: 'profile-settings',
+              builder: (context, state) => const ProfileSettingsScreen(),
             ),
           ],
         ),

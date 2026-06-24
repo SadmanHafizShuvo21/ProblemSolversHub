@@ -53,32 +53,68 @@ class PostModel extends Post {
   factory PostModel.fromJson(Map<String, dynamic> json, String documentId) {
     return PostModel(
       id: documentId,
-      userId: json['userId'] as String,
-      userAvatar: json['userAvatar'] as String,
-      userName: json['userName'] as String,
-      problemTitle: json['problemTitle'] as String,
-      platform: json['platform'] as String,
-      difficulty: json['difficulty'] as String,
-      tags: List<String>.from(json['tags'] as List<dynamic>),
-      approachPreview: json['approachPreview'] as String,
-      approachFull: json['approachFull'] as String,
-      codeSnippet: json['codeSnippet'] as String,
-      likes: json['likes'] as int? ?? 0,
-      comments: json['comments'] as int? ?? 0,
-      views: json['views'] as int? ?? 0,
-      problemLink: json['problemLink'] as String?,
-      timeComplexity: json['timeComplexity'] as String?,
-      spaceComplexity: json['spaceComplexity'] as String?,
-      keyLearnings:
-          List<String>.from(json['keyLearnings'] as List<dynamic>? ?? []),
-      timestamp: _parseDateTime(json['timestamp']),
+      userId: _safeNonNullableString(json['userId'], fallback: 'unknown_user'),
+      userAvatar: _safeNonNullableString(json['userAvatar'], fallback: ''),
+      userName: _safeNonNullableString(json['userName'], fallback: 'Anonymous'),
+      problemTitle: _safeNonNullableString(json['problemTitle'], fallback: 'Untitled problem'),
+      platform: _safeNonNullableString(json['platform'], fallback: 'Unknown'),
+      difficulty: _safeNonNullableString(json['difficulty'], fallback: 'Unknown'),
+      tags: _parseStringList(json['tags']),
+      approachPreview: _safeNonNullableString(json['approachPreview'], fallback: ''),
+      approachFull: _safeNonNullableString(json['approachFull'], fallback: ''),
+      codeSnippet: _safeNonNullableString(json['codeSnippet'], fallback: ''),
+      likes: _safeInt(json['likes'], fallback: 0),
+      comments: _safeInt(json['comments'], fallback: 0),
+      views: _safeInt(json['views'], fallback: 0),
+      problemLink: _safeString(json['problemLink']),
+      timeComplexity: _safeString(json['timeComplexity']),
+      spaceComplexity: _safeString(json['spaceComplexity']),
+      keyLearnings: _parseStringList(json['keyLearnings']),
+      timestamp: _parseDateTime(json['timestamp'] ?? json['createdAt'] ?? json['updatedAt']),
     );
+  }
+
+  static String? _safeString(dynamic value) {
+    if (value is String && value.trim().isNotEmpty) return value;
+    return null;
+  }
+
+  static String _safeNonNullableString(dynamic value, {required String fallback}) {
+    if (value is String && value.trim().isNotEmpty) return value.trim();
+    return fallback;
+  }
+
+  static int _safeInt(dynamic value, {int fallback = 0}) {
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      return int.tryParse(value) ?? fallback;
+    }
+    return fallback;
+  }
+
+  static List<String> _parseStringList(dynamic value) {
+    if (value is List) {
+      return value.whereType<String>().map((item) => item.trim()).where((item) => item.isNotEmpty).toList();
+    }
+    if (value is String && value.trim().isNotEmpty) {
+      return value.split(',').map((item) => item.trim()).where((item) => item.isNotEmpty).toList();
+    }
+    return const [];
   }
 
   static DateTime _parseDateTime(dynamic json) {
     if (json is DateTime) return json;
     if (json is Timestamp) return json.toDate();
-    if (json is String) return DateTime.parse(json);
+    if (json is String) {
+      return DateTime.tryParse(json) ?? DateTime.now();
+    }
+    if (json is int) {
+      return DateTime.fromMillisecondsSinceEpoch(json);
+    }
+    if (json == null) {
+      return DateTime.now();
+    }
     throw ArgumentError.value(json, 'timestamp', 'Unsupported timestamp format');
   }
 
