@@ -7,14 +7,17 @@ class SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          fontSize: 16,
-        ),
+      child: AnimatedDefaultTextStyle(
+        duration: const Duration(milliseconds: 220),
+        style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: theme.colorScheme.onBackground,
+            ) ?? const TextStyle(fontSize: 16),
+        child: Text(label),
       ),
     );
   }

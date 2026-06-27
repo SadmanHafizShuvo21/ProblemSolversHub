@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:problem_solvers_hub/features/auth/presentation/providers/auth_providers.dart';
 import 'package:problem_solvers_hub/features/auth/presentation/screens/auth_page.dart';
 import 'package:problem_solvers_hub/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:problem_solvers_hub/features/auth/presentation/screens/login_screen_new.dart';
 import 'package:problem_solvers_hub/features/auth/presentation/screens/signup_screen_new.dart';
+import 'package:problem_solvers_hub/features/post/screens/post_detail_screen.dart';
+import 'package:problem_solvers_hub/shared/models/post.dart';
 import 'package:problem_solvers_hub/ui/app.dart';
 import 'package:problem_solvers_hub/ui/screens/activity_detail_screen.dart';
 import 'package:problem_solvers_hub/ui/screens/create_post_screen.dart';
@@ -88,6 +89,26 @@ class AppRouter {
           path: '/forgot-password',
           name: 'forgot-password',
           builder: (context, state) => const ForgotPasswordScreen(),
+        ),
+        GoRoute(
+          path: '/post',
+          name: 'post-detail',
+          builder: (context, state) {
+            final extra = state.extra;
+            if (extra is Post) {
+              return PostDetailScreen(post: extra);
+            }
+            return Scaffold(
+              appBar: AppBar(title: const Text('Post detail')),
+              body: Center(
+                child: Text(
+                  'Unable to open post details. Please return and try again.',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          },
         ),
       ],
       errorBuilder: (context, state) => Scaffold(

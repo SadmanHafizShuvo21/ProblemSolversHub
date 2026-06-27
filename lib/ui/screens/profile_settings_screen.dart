@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:problem_solvers_hub/core/theme/app_theme.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:problem_solvers_hub/features/auth/domain/entities/user.dart';
 import 'package:problem_solvers_hub/features/auth/presentation/providers/auth_providers.dart';
@@ -58,6 +59,8 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
   bool _saving = false;
   bool _isUploadingImage = false;
   bool _hasPopulated = false;
+  Color? _selectedPrimaryColor;
+  Color? _selectedBackgroundColor;
 
   @override
   void dispose() {
@@ -670,6 +673,147 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
+
+                  // Theme Colors Section - Live preview and selection
+                  _buildSectionCard(
+                    isDark: isDark,
+                    icon: Icons.color_lens_outlined,
+                    title: 'Theme Colors',
+                    subtitle: 'Pick a primary accent and background',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        Text('Primary color', style: Theme.of(context).textTheme.bodyLarge),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 10,
+                          children: [
+                            ...[0xFF4F46E5, 0xFF06B6D4, 0xFF10B981, 0xFFF97316, 0xFFEF4444, 0xFF8B5CF6].map((hex) {
+                              final c = Color(hex);
+                              final selected = (ref.read(themeNotifierProvider).primary.value == c.value);
+                              return GestureDetector(
+                                onTap: () {
+                                  ref.read(themeNotifierProvider).updatePrimary(c);
+                                  setState(() => _selectedPrimaryColor = c);
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 220),
+                                  width: selected ? 48 : 40,
+                                  height: selected ? 48 : 40,
+                                  decoration: BoxDecoration(
+                                    color: c,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      if (selected) BoxShadow(color: c.withOpacity(0.32), blurRadius: 12, offset: const Offset(0,6)),
+                                    ],
+                                    border: Border.all(color: Colors.white.withOpacity(0.6), width: 2),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            GestureDetector(
+                              onTap: () async {
+                                final hex = await showDialog<String?>(
+                                  context: context,
+                                  builder: (context) {
+                                    final controller = TextEditingController();
+                                    return AlertDialog(
+                                      title: const Text('Enter hex color'),
+                                      content: TextField(
+                                        controller: controller,
+                                        decoration: const InputDecoration(hintText: 'e.g. FF0066 or #FF0066'),
+                                      ),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+                                        ElevatedButton(
+                                          onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+                                          child: const Text('Apply'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                                if (hex != null && hex.isNotEmpty) {
+                                  String h = hex.replaceAll('#', '');
+                                  if (h.length == 6) h = 'FF$h';
+                                  try {
+                                    final c = Color(int.parse(h, radix: 16));
+                                    ref.read(themeNotifierProvider).updatePrimary(c);
+                                    setState(() => _selectedPrimaryColor = c);
+                                  } catch (_) {}
+                                }
+                              },
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade200,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: const Center(child: Icon(Icons.add, size: 20)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Text('Background color', style: Theme.of(context).textTheme.bodyLarge),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 10,
+                          children: [
+                            ...[0xFFF8FAFC, 0xFFFFFFFF, 0xFFF5F7FA, 0xFF0A0A0A].map((hex) {
+                              final c = Color(hex);
+                              final selected = (ref.read(themeNotifierProvider).background.value == c.value);
+                              return GestureDetector(
+                                onTap: () {
+                                  ref.read(themeNotifierProvider).updateBackground(c);
+                                  setState(() => _selectedBackgroundColor = c);
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 220),
+                                  width: selected ? 56 : 48,
+                                  height: selected ? 36 : 32,
+                                  decoration: BoxDecoration(
+                                    color: c,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.grey.shade300),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            ElevatedButton(
+                              onPressed: () {
+                                // Reset to defaults
+                                ref.read(themeNotifierProvider).updateFromMap({
+                                  'primary': const Color(0xFF4F46E5),
+                                  'background': const Color(0xFFF8FAFC),
+                                });
+                                setState(() {
+                                  _selectedPrimaryColor = null;
+                                  _selectedBackgroundColor = null;
+                                });
+                              },
+                              child: const Text('Reset'),
+                            ),
+                            const SizedBox(width: 12),
+                            TextButton(
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Primary color updated (session only).')));
+                              },
+                              child: const Text('Save to profile later'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
 
                   // Account Management Section - Facebook Style
                   _buildSectionCard(

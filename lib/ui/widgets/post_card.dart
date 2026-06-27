@@ -5,8 +5,14 @@ import 'package:problem_solvers_hub/ui/widgets/difficulty_badge.dart';
 class PostCard extends StatelessWidget {
   final PostPreview post;
   final VoidCallback? onTap;
+  final bool isHovered;
 
-  const PostCard({super.key, required this.post, this.onTap});
+  const PostCard({
+    super.key,
+    required this.post,
+    this.onTap,
+    required this.isHovered,
+  });
 
   @override
   Widget build(BuildContext context) {

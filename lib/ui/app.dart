@@ -45,10 +45,11 @@ class ProblemSolversHubApp extends ConsumerWidget {
       });
     });
 
+    final themeNotifier = ref.watch(themeNotifierProvider);
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'ProblemSolvers Hub',
-      theme: AppTheme.lightTheme,
+      theme: themeNotifier.currentTheme,
       routerConfig: goRouter,
     );
   }

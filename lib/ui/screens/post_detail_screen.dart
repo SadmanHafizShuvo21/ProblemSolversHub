@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:problem_solvers_hub/core/theme/app_theme.dart';
+// migrated to Theme.of(context) and ThemeNotifier
 import 'package:problem_solvers_hub/ui/models/dummy_data.dart';
 import 'package:problem_solvers_hub/ui/widgets/difficulty_badge.dart';
 
@@ -65,13 +65,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         backgroundColor: theme.colorScheme.background,
         appBar: AppBar(
           title: const Text('Post Detail'),
-          leading: BackButton(color: AppTheme.textPrimary),
+          leading: BackButton(color: theme.colorScheme.onSurface),
           actions: [
             IconButton(
               onPressed: _toggleLike,
               icon: Icon(
                 liked ? Icons.favorite : Icons.favorite_border,
-                color: liked ? Colors.red : AppTheme.textSecondary,
+                color: liked ? Colors.red : theme.colorScheme.onSurfaceVariant,
               ),
             ),
             IconButton(
@@ -109,7 +109,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                             widget.post.title,
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w800,
-                              color: AppTheme.textPrimary,
+                              color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ),
@@ -137,7 +137,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                             Text(
                               widget.post.timestamp,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppTheme.textSecondary,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -151,14 +151,17 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         _buildStatItem(
                           Icons.thumb_up_alt_outlined,
                           likes.toString(),
+                          context,
                         ),
                         _buildStatItem(
                           Icons.chat_bubble_outline,
                           widget.post.comments.toString(),
+                          context,
                         ),
                         _buildStatItem(
                           Icons.remove_red_eye_outlined,
                           widget.post.views.toString(),
+                          context,
                         ),
                       ],
                     ),
@@ -167,9 +170,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               ),
               const SizedBox(height: 20),
               TabBar(
-                indicatorColor: AppTheme.primary,
-                labelColor: AppTheme.textPrimary,
-                unselectedLabelColor: AppTheme.textSecondary,
+                indicatorColor: theme.colorScheme.primary,
+                labelColor: theme.colorScheme.onSurface,
+                unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
                 tabs: const [
                   Tab(text: 'Approach'),
                   Tab(text: 'Code'),
@@ -231,7 +234,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       ),
                       IconButton(
                         onPressed: _addComment,
-                        icon: const Icon(Icons.send, color: AppTheme.primary),
+                        icon: Icon(Icons.send, color: theme.colorScheme.primary),
                       ),
                     ],
                   ),
@@ -321,7 +324,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     Text(
                       comment.timestamp,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -339,17 +342,18 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
-  Widget _buildStatItem(IconData icon, String label) {
+  Widget _buildStatItem(IconData icon, String label, BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurfaceVariant;
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppTheme.textSecondary),
+        Icon(icon, size: 18, color: color),
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textSecondary,
+            color: color,
           ),
         ),
       ],

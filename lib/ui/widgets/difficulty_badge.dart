@@ -5,50 +5,47 @@ class DifficultyBadge extends StatelessWidget {
 
   const DifficultyBadge({super.key, required this.label});
 
-  Color get _backgroundColor {
+  Color _baseColor(BuildContext context) {
+    final t = Theme.of(context);
     switch (label.toLowerCase()) {
       case 'beginner':
-        return const Color(0xFF22C55E).withOpacity(0.16);
+        return Colors.green;
       case 'intermediate':
-        return const Color(0xFF3B82F6).withOpacity(0.16);
+        return Colors.blue;
       case 'advanced':
-        return const Color(0xFFF97316).withOpacity(0.16);
+        return Colors.orange;
       case 'expert':
-        return const Color(0xFFEF4444).withOpacity(0.16);
+        return Colors.red;
       default:
-        return Colors.grey.shade200;
-    }
-  }
-
-  Color get _textColor {
-    switch (label.toLowerCase()) {
-      case 'beginner':
-        return const Color(0xFF22C55E);
-      case 'intermediate':
-        return const Color(0xFF3B82F6);
-      case 'advanced':
-        return const Color(0xFFF97316);
-      case 'expert':
-        return const Color(0xFFEF4444);
-      default:
-        return Colors.grey.shade700;
+        return t.colorScheme.primary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final base = _baseColor(context);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: _backgroundColor,
+        color: base.withOpacity(0.12),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: base.withOpacity(0.18)),
+        boxShadow: [
+          BoxShadow(
+            color: base.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: _textColor,
+          color: base,
           fontSize: 12,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

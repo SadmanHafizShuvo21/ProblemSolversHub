@@ -381,7 +381,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             height: 8,
             decoration: BoxDecoration(
               color: index <= _currentStep
-                  ? AppTheme.primary
+                  ? Theme.of(context).colorScheme.primary
                   : const Color(0xFFCBD5E1),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -538,14 +538,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               Icon(
                                 item == selectedValue ? Icons.check_circle : Icons.circle_outlined,
                                 size: 20,
-                                color: item == selectedValue ? AppTheme.primary : null,
+                                color: item == selectedValue ? Theme.of(context).colorScheme.primary : null,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 item,
                                 style: TextStyle(
                                   fontWeight: item == selectedValue ? FontWeight.w600 : FontWeight.normal,
-                                  color: item == selectedValue ? AppTheme.primary : null,
+                                  color: item == selectedValue ? Theme.of(context).colorScheme.primary : null,
                                 ),
                               ),
                             ],
@@ -581,7 +581,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             child: Text(
               helperText,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -648,14 +648,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: selectedItems.map((item) => Chip(
+                children: selectedItems.map((item) => Chip(
                 label: Text(item),
                 deleteIcon: const Icon(Icons.close, size: 16),
                 onDeleted: () {
                   final newList = List<String>.from(selectedItems)..remove(item);
                   onChanged(newList);
                 },
-                backgroundColor: AppTheme.primary.withOpacity(0.1),
+                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
               )).toList(),
             ),
           ),
@@ -681,12 +681,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             ? 'Select $label...' 
                             : '${selectedItems.length} selected',
                         style: TextStyle(
-                          color: selectedItems.isNotEmpty 
-                              ? AppTheme.primary 
-                              : Colors.grey.shade600,
-                          fontWeight: selectedItems.isNotEmpty 
-                              ? FontWeight.w600 
-                              : FontWeight.normal,
+                          color: selectedItems.isNotEmpty
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey.shade600,
+                          fontWeight: selectedItems.isNotEmpty
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -726,7 +726,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                 Icon(
                                   isSelected ? Icons.check_box : Icons.check_box_outline_blank,
                                   size: 20,
-                                  color: isSelected ? AppTheme.primary : null,
+                                  color: isSelected ? Theme.of(context).colorScheme.primary : null,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -734,7 +734,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                     item,
                                     style: TextStyle(
                                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                      color: isSelected ? AppTheme.primary : null,
+                                      color: isSelected ? Theme.of(context).colorScheme.primary : null,
                                     ),
                                   ),
                                 ),
@@ -802,7 +802,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             child: Text(
               helperText,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -985,7 +985,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             child: Text(
               'Add key insights you learned from this problem',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -1040,11 +1040,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           Text(
             'Check everything looks good before publishing',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppTheme.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 18),
-          PostCard(post: preview, onTap: null),
+          PostCard(post: preview, onTap: null, isHovered: false),
           const SizedBox(height: 18),
           _buildReviewSection(
             title: 'Details',
@@ -1188,10 +1188,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             return ChoiceChip(
               label: Text(option),
               selected: isActive,
-              selectedColor: AppTheme.primary,
+              selectedColor: Theme.of(context).colorScheme.primary,
               backgroundColor: const Color(0xFFE2E8F0),
               labelStyle: TextStyle(
-                color: isActive ? Colors.white : AppTheme.textPrimary,
+                color: isActive ? Colors.white : Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
               ),
               onSelected: (_) => onSelected(option),

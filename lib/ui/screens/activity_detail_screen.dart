@@ -93,8 +93,8 @@ class ActivityDetailScreen extends StatelessWidget {
     
     debugPrint('Problem Link: $problemLink');
     
-    final statusInfo = _getStatusInfo(status);
-    final difficultyColor = _getDifficultyColor(difficulty);
+    final statusInfo = _getStatusInfo(status, theme.colorScheme);
+    final difficultyColor = _getDifficultyColor(difficulty, theme.colorScheme);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -104,9 +104,10 @@ class ActivityDetailScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: isDark
-                ? [Colors.grey[900]!, Colors.grey[850]!]
-                : [Colors.grey[50]!, Colors.white!],
+            colors: [
+              theme.colorScheme.background,
+              theme.colorScheme.surface,
+            ],
           ),
         ),
         child: SingleChildScrollView(
@@ -185,6 +186,7 @@ class ActivityDetailScreen extends StatelessWidget {
   }
 
   AppBar _buildAppBar(BuildContext context, String problemName) {
+    final theme = Theme.of(context);
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -192,10 +194,10 @@ class ActivityDetailScreen extends StatelessWidget {
         icon: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.05),
+            color: theme.colorScheme.onSurface.withOpacity(0.08),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          child: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: theme.colorScheme.onSurface),
         ),
         onPressed: () => Navigator.pop(context),
       ),
@@ -217,9 +219,16 @@ class ActivityDetailScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: statusInfo.color.withOpacity(0.12),
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: statusInfo.color.withOpacity(0.2)),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.24)),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.onSurface.withOpacity(0.03),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -273,21 +282,22 @@ class ActivityDetailScreen extends StatelessWidget {
     String? problemLink,
     BuildContext context,
   ) {
+    final theme = Theme.of(context);
     final hasValidLink = problemLink != null && problemLink.isNotEmpty;
     
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: theme.colorScheme.onSurface.withOpacity(0.04),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,18 +323,18 @@ class ActivityDetailScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: theme.colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.public, size: 14, color: Colors.grey[600]),
+                    Icon(Icons.public, size: 14, color: theme.colorScheme.secondary),
                     const SizedBox(width: 4),
                     Text(
                       platform,
                       style: GoogleFonts.inter(
-                        color: Colors.grey[600],
+                        color: theme.colorScheme.onSecondaryContainer,
                         fontWeight: FontWeight.w500,
                         fontSize: 12,
                       ),
@@ -342,10 +352,10 @@ class ActivityDetailScreen extends StatelessWidget {
                 _launchURL(problemLink!, context);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('No problem link available'),
-                    backgroundColor: Colors.orange,
-                    duration: Duration(seconds: 2),
+                  SnackBar(
+                    content: const Text('No problem link available'),
+                    backgroundColor: theme.colorScheme.secondary,
+                    duration: const Duration(seconds: 2),
                   ),
                 );
               }
@@ -360,9 +370,11 @@ class ActivityDetailScreen extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       fontSize: 20,
                       height: 1.2,
-                      color: hasValidLink ? Colors.blue[700] : Colors.grey[800],
+                      color: hasValidLink
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface,
                       decoration: hasValidLink ? TextDecoration.underline : null,
-                      decorationColor: Colors.blue[300],
+                      decorationColor: theme.colorScheme.primaryContainer,
                     ),
                   ),
                 ),
@@ -371,7 +383,7 @@ class ActivityDetailScreen extends StatelessWidget {
                   Icon(
                     Icons.open_in_new,
                     size: 18,
-                    color: Colors.blue[600],
+                    color: theme.colorScheme.primary,
                   ),
                 ],
               ],
@@ -380,13 +392,13 @@ class ActivityDetailScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.fingerprint, size: 14, color: Colors.grey[400]),
+              Icon(Icons.fingerprint, size: 14, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(width: 4),
               Text(
                 'ID: $platform-$problemId',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: Colors.grey[400],
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const Spacer(),
@@ -394,7 +406,7 @@ class ActivityDetailScreen extends StatelessWidget {
                 'Submitted ${timestamp != null ? DateFormat.MMMd().format(timestamp) : 'Unknown date'}',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: Colors.grey[400],
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -405,6 +417,7 @@ class ActivityDetailScreen extends StatelessWidget {
   }
 
   Widget _buildTagsSection(List<String> tags, BuildContext context) {
+    final theme = Theme.of(context);
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -416,12 +429,12 @@ class ActivityDetailScreen extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Colors.blue[50]!,
-                Colors.purple[50]!,
+                theme.colorScheme.secondaryContainer,
+                theme.colorScheme.surface,
               ],
             ),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.blue[100]!),
+            border: Border.all(color: theme.colorScheme.outline.withOpacity(0.4)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -429,14 +442,14 @@ class ActivityDetailScreen extends StatelessWidget {
               Icon(
                 Icons.tag,
                 size: 14,
-                color: Colors.blue[600],
+                color: theme.colorScheme.primary,
               ),
               const SizedBox(width: 4),
               Text(
                 tag,
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: Colors.grey[700],
+                  color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -460,13 +473,14 @@ class ActivityDetailScreen extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final theme = Theme.of(context);
     final List<Map<String, dynamic>> stats = [];
     if (executionTime != null) {
       stats.add({
         'icon': Icons.speed_outlined,
         'value': executionTime,
         'label': 'Runtime',
-        'color': Colors.blue,
+        'color': theme.colorScheme.primary,
       });
     }
     if (memoryUsage != null) {
@@ -474,7 +488,7 @@ class ActivityDetailScreen extends StatelessWidget {
         'icon': Icons.memory_outlined,
         'value': memoryUsage,
         'label': 'Memory',
-        'color': Colors.purple,
+        'color': theme.colorScheme.tertiary,
       });
     }
     if (passedTests != null) {
@@ -482,7 +496,7 @@ class ActivityDetailScreen extends StatelessWidget {
         'icon': Icons.check_circle_outline,
         'value': passedTests,
         'label': 'Passed',
-        'color': Colors.green,
+        'color': theme.colorScheme.secondary,
       });
     }
     if (failedTests != null) {
@@ -490,21 +504,22 @@ class ActivityDetailScreen extends StatelessWidget {
         'icon': Icons.error_outline,
         'value': failedTests,
         'label': 'Failed',
-        'color': Colors.red,
+        'color': theme.colorScheme.error,
       });
     }
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.36)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: stats.map((stat) {
           return _buildQuickStatItem(
+            context: context,
             icon: stat['icon'] as IconData,
             value: stat['value'] as String,
             label: stat['label'] as String,
@@ -516,11 +531,13 @@ class ActivityDetailScreen extends StatelessWidget {
   }
 
   Widget _buildQuickStatItem({
+    required BuildContext context,
     required IconData icon,
     required String value,
     required String label,
     required Color color,
   }) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         Icon(icon, size: 20, color: color),
@@ -536,7 +553,7 @@ class ActivityDetailScreen extends StatelessWidget {
           label,
           style: GoogleFonts.inter(
             fontSize: 11,
-            color: Colors.grey[500],
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -544,16 +561,17 @@ class ActivityDetailScreen extends StatelessWidget {
   }
 
   Widget _buildSectionTitle(String title, IconData icon, BuildContext context) {
+    final theme = Theme.of(context);
     return Row(
       children: [
-        Icon(icon, size: 20, color: Colors.grey[600]),
+        Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
         const SizedBox(width: 8),
         Text(
           title,
           style: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
             fontSize: 16,
-            color: Colors.grey[800],
+            color: theme.colorScheme.onSurface,
           ),
         ),
       ],
@@ -561,16 +579,17 @@ class ActivityDetailScreen extends StatelessWidget {
   }
 
   Widget _buildStatementCard(String statement, BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.36)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: theme.colorScheme.onSurface.withOpacity(0.02),
             blurRadius: 10,
           ),
         ],
@@ -580,31 +599,32 @@ class ActivityDetailScreen extends StatelessWidget {
         style: GoogleFonts.inter(
           fontSize: 14,
           height: 1.6,
-          color: Colors.grey[800],
+          color: theme.colorScheme.onSurface,
         ),
       ),
     );
   }
 
   Widget _buildApproachCard(String? approach, BuildContext context) {
+    final theme = Theme.of(context);
     if (approach == null || approach.isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey[50],
+          color: theme.colorScheme.surfaceVariant,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey[200]!),
+          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.36)),
         ),
         child: Column(
           children: [
-            Icon(Icons.info_outline, color: Colors.grey[400], size: 32),
+            Icon(Icons.info_outline, color: theme.colorScheme.onSurfaceVariant, size: 32),
             const SizedBox(height: 8),
             Text(
               'No approach description available',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: Colors.grey[500],
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 4),
@@ -612,7 +632,7 @@ class ActivityDetailScreen extends StatelessWidget {
               'Check your data structure for fields like "approach", "solution", or "explanation"',
               style: GoogleFonts.inter(
                 fontSize: 12,
-                color: Colors.grey[400],
+                color: theme.colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -629,12 +649,12 @@ class ActivityDetailScreen extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.blue[50]!,
-            Colors.purple[50]!,
+            theme.colorScheme.secondaryContainer,
+            theme.colorScheme.surface,
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue[100]!),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.4)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -642,10 +662,10 @@ class ActivityDetailScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.amber[100],
+              color: theme.colorScheme.secondary.withOpacity(0.16),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(Icons.lightbulb, size: 20, color: Colors.amber[700]),
+            child: Icon(Icons.lightbulb, size: 20, color: theme.colorScheme.secondary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -654,7 +674,7 @@ class ActivityDetailScreen extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 14,
                 height: 1.6,
-                color: Colors.grey[800],
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
@@ -664,12 +684,13 @@ class ActivityDetailScreen extends StatelessWidget {
   }
 
   Widget _buildComplexityCard(String? timeComplexity, String? spaceComplexity, BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.36)),
       ),
       child: Row(
         children: [
@@ -683,7 +704,7 @@ class ActivityDetailScreen extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -692,7 +713,7 @@ class ActivityDetailScreen extends StatelessWidget {
                     style: GoogleFonts.firaCode(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.blue[700],
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                 ],
@@ -704,7 +725,7 @@ class ActivityDetailScreen extends StatelessWidget {
               Container(
                 width: 1,
                 height: 30,
-                color: Colors.grey[300],
+                color: theme.colorScheme.outline.withOpacity(0.75),
                 margin: const EdgeInsets.symmetric(horizontal: 16),
               ),
             Expanded(
@@ -716,7 +737,7 @@ class ActivityDetailScreen extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -725,7 +746,7 @@ class ActivityDetailScreen extends StatelessWidget {
                     style: GoogleFonts.firaCode(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.purple[700],
+                      color: theme.colorScheme.secondary,
                     ),
                   ),
                 ],
@@ -738,23 +759,17 @@ class ActivityDetailScreen extends StatelessWidget {
   }
 
   Widget _buildCodeCard(String code, BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1E1E1E),
-            Color(0xFF2D2D2D),
-          ],
-        ),
+        color: theme.colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[800]!),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.4)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: theme.colorScheme.onSurface.withOpacity(0.10),
             blurRadius: 20,
           ),
         ],
@@ -767,8 +782,8 @@ class ActivityDetailScreen extends StatelessWidget {
               Container(
                 width: 12,
                 height: 12,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.error,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -776,8 +791,8 @@ class ActivityDetailScreen extends StatelessWidget {
               Container(
                 width: 12,
                 height: 12,
-                decoration: const BoxDecoration(
-                  color: Colors.amber,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.secondary,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -785,8 +800,8 @@ class ActivityDetailScreen extends StatelessWidget {
               Container(
                 width: 12,
                 height: 12,
-                decoration: const BoxDecoration(
-                  color: Colors.green,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -794,14 +809,14 @@ class ActivityDetailScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.grey[800],
+                  color: theme.colorScheme.onSurface.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   'Dart',
                   style: GoogleFonts.inter(
                     fontSize: 11,
-                    color: Colors.grey[400],
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -816,7 +831,7 @@ class ActivityDetailScreen extends StatelessWidget {
               style: GoogleFonts.firaCode(
                 fontSize: 13,
                 height: 1.8,
-                color: Colors.grey[200],
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
@@ -826,31 +841,35 @@ class ActivityDetailScreen extends StatelessWidget {
   }
 
   Widget _buildSocialStats(String? views, String? likes, String? comments, BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.36)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           if (views != null)
             _buildSocialStatItem(
+              context: context,
               icon: Icons.visibility_outlined,
               value: views,
               label: 'Views',
             ),
           if (likes != null)
             _buildSocialStatItem(
+              context: context,
               icon: Icons.favorite_outline,
               value: likes,
               label: 'Likes',
-              color: Colors.red,
+              color: theme.colorScheme.error,
             ),
           if (comments != null)
             _buildSocialStatItem(
+              context: context,
               icon: Icons.chat_bubble_outline,
               value: comments,
               label: 'Comments',
@@ -861,14 +880,16 @@ class ActivityDetailScreen extends StatelessWidget {
   }
 
   Widget _buildSocialStatItem({
+    required BuildContext context,
     required IconData icon,
     required String value,
     required String label,
     Color? color,
   }) {
+    final theme = Theme.of(context);
     return Column(
       children: [
-        Icon(icon, size: 22, color: color ?? Colors.grey[600]),
+        Icon(icon, size: 22, color: color ?? theme.colorScheme.onSurfaceVariant),
         const SizedBox(height: 4),
         Text(
           value,
@@ -881,7 +902,7 @@ class ActivityDetailScreen extends StatelessWidget {
           label,
           style: GoogleFonts.inter(
             fontSize: 11,
-            color: Colors.grey[500],
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -946,13 +967,14 @@ class ActivityDetailScreen extends StatelessWidget {
   }
 
   static Future<void> _launchURL(String url, BuildContext context) async {
+    final theme = Theme.of(context);
     if (url.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No URL provided'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: const Text('No URL provided'),
+            backgroundColor: theme.colorScheme.secondary,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -1005,15 +1027,15 @@ class ActivityDetailScreen extends StatelessWidget {
                 ),
                 Text(
                   'URL: $cleanUrl',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[300]),
+                  style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
                 ),
-                const Text(
+                Text(
                   'Please install a browser or check the URL',
-                  style: TextStyle(fontSize: 11, color: Color.fromARGB(255, 208, 86, 86)),
+                  style: TextStyle(fontSize: 11, color: theme.colorScheme.error),
                 ),
               ],
             ),
-            backgroundColor: Colors.red[700],
+            backgroundColor: theme.colorScheme.error.withOpacity(0.95),
             duration: const Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
           ),
@@ -1022,21 +1044,21 @@ class ActivityDetailScreen extends StatelessWidget {
     }
   }
 
-  Color _getDifficultyColor(String difficulty) {
+  Color _getDifficultyColor(String difficulty, ColorScheme colors) {
     final value = difficulty.toLowerCase();
-    if (value.contains('easy')) return Colors.green;
-    if (value.contains('medium')) return Colors.orange;
-    if (value.contains('hard')) return Colors.red;
-    return Colors.grey;
+    if (value.contains('easy')) return colors.secondary;
+    if (value.contains('medium')) return colors.primary;
+    if (value.contains('hard')) return colors.error;
+    return colors.onSurfaceVariant;
   }
 
-  StatusInfo _getStatusInfo(String status) {
+  StatusInfo _getStatusInfo(String status, ColorScheme colors) {
     final value = status.toLowerCase();
     if (value.contains('accepted') || value.contains('pass') || value.contains('success')) {
       return StatusInfo(
         label: 'Accepted ✅',
         description: 'Your solution passed all test cases',
-        color: Colors.green,
+        color: colors.secondary,
         icon: Icons.check_circle_rounded,
       );
     }
@@ -1044,7 +1066,7 @@ class ActivityDetailScreen extends StatelessWidget {
       return StatusInfo(
         label: 'Wrong Answer ❌',
         description: 'Your solution did not pass all test cases',
-        color: Colors.red,
+        color: colors.error,
         icon: Icons.close_rounded,
       );
     }
@@ -1052,14 +1074,14 @@ class ActivityDetailScreen extends StatelessWidget {
       return StatusInfo(
         label: 'Time Limit Exceeded ⏰',
         description: 'Your solution took too long to execute',
-        color: Colors.orange,
+        color: colors.primary,
         icon: Icons.timer_outlined,
       );
     }
     return StatusInfo(
       label: 'Pending ⏳',
       description: 'Your submission is being evaluated',
-      color: Colors.blue,
+      color: colors.tertiary,
       icon: Icons.hourglass_empty_rounded,
     );
   }
