@@ -1,5 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-// migrated to Theme.of(context) and ThemeNotifier
+import 'package:problem_solvers_hub/core/service_locator.dart';
+import 'package:problem_solvers_hub/features/posts/domain/entities/comment.dart';
+import 'package:problem_solvers_hub/features/posts/domain/repositories/posts_repository.dart';
 import 'package:problem_solvers_hub/ui/models/dummy_data.dart';
 import 'package:problem_solvers_hub/ui/widgets/difficulty_badge.dart';
 
@@ -13,16 +16,28 @@ class PostDetailScreen extends StatefulWidget {
 }
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
-  late int likes;
-  late bool liked;
+  final PostsRepository _postsRepository = getIt<PostsRepository>();
   final TextEditingController _commentController = TextEditingController();
-  final List<CommentPreview> _comments = List.from(kDiscussionComments);
+  late final Stream<List<PostComment>> _commentsStream;
+  late final Stream<bool> _likeStatusStream;
+  bool _isSendingComment = false;
+  bool _isLiking = false;
 
   @override
   void initState() {
     super.initState();
-    likes = widget.post.likes;
-    liked = false;
+    final postId = widget.post.id;
+    if (postId.isNotEmpty) {
+      _commentsStream = _postsRepository.getCommentsStream(postId);
+      final currentUser = FirebaseAuth.instance.currentUser;
+      _likeStatusStream = currentUser != null
+          ? _postsRepository.getLikeStatusStream(postId, currentUser.uid)
+          : Stream<bool>.value(false);
+      _postsRepository.recordView(postId);
+    } else {
+      _commentsStream = const Stream.empty();
+      _likeStatusStream = Stream<bool>.value(false);
+    }
   }
 
   @override
@@ -31,29 +46,73 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     super.dispose();
   }
 
-  void _toggleLike() {
+  Future<void> _toggleLike(String postId, bool isLiked) async {
+    if (_isLiking) return;
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      _showError('Login to like this post.');
+      return;
+    }
+
     setState(() {
-      liked = !liked;
-      likes += liked ? 1 : -1;
+      _isLiking = true;
     });
+
+    try {
+      if (isLiked) {
+        await _postsRepository.unlikePost(postId, userId: currentUser.uid);
+      } else {
+        await _postsRepository.likePost(postId, userId: currentUser.uid);
+      }
+    } catch (e) {
+      _showError('Unable to update like. Please try again.');
+    } finally {
+      setState(() {
+        _isLiking = false;
+      });
+    }
   }
 
-  void _addComment() {
+  Future<void> _addComment(String postId) async {
     final text = _commentController.text.trim();
     if (text.isEmpty) return;
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      _showError('You must be signed in to comment.');
+      return;
+    }
+
+    final comment = PostComment(
+      postId: postId,
+      userId: currentUser.uid,
+      userAvatar: currentUser.photoURL ?? 'https://via.placeholder.com/40',
+      userName: currentUser.displayName ?? 'Anonymous',
+      text: text,
+      timestamp: DateTime.now(),
+    );
+
     setState(() {
-      _comments.insert(
-        0,
-        CommentPreview(
-          username: 'You',
-          avatarUrl:
-              'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=80&q=80',
-          text: text,
-          timestamp: 'Just now',
-        ),
-      );
-      _commentController.clear();
+      _isSendingComment = true;
     });
+
+    try {
+      await _postsRepository.addComment(postId, comment);
+      _commentController.clear();
+    } catch (e) {
+      _showError('Unable to add comment. Please try again.');
+    } finally {
+      setState(() {
+        _isSendingComment = false;
+      });
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
@@ -67,12 +126,18 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           title: const Text('Post Detail'),
           leading: BackButton(color: theme.colorScheme.onSurface),
           actions: [
-            IconButton(
-              onPressed: _toggleLike,
-              icon: Icon(
-                liked ? Icons.favorite : Icons.favorite_border,
-                color: liked ? Colors.red : theme.colorScheme.onSurfaceVariant,
-              ),
+            StreamBuilder<bool>(
+              stream: _likeStatusStream,
+              builder: (context, likeSnapshot) {
+                final isLiked = likeSnapshot.data ?? false;
+                return IconButton(
+                  onPressed: () => _toggleLike(widget.post.id, isLiked),
+                  icon: Icon(
+                    isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: isLiked ? Colors.red : theme.colorScheme.onSurfaceVariant,
+                  ),
+                );
+              },
             ),
             IconButton(
               onPressed: () {},
@@ -148,20 +213,38 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildStatItem(
-                          Icons.thumb_up_alt_outlined,
-                          likes.toString(),
-                          context,
+                        StreamBuilder<int>(
+                          stream: _postsRepository.getLikesCountStream(widget.post.id),
+                          builder: (context, likesSnapshot) {
+                            final likesCount = likesSnapshot.data ?? widget.post.likes;
+                            return _buildStatItem(
+                              Icons.thumb_up_alt_outlined,
+                              likesCount.toString(),
+                              context,
+                            );
+                          },
                         ),
-                        _buildStatItem(
-                          Icons.chat_bubble_outline,
-                          widget.post.comments.toString(),
-                          context,
+                        StreamBuilder<int>(
+                          stream: _postsRepository.getCommentsCountStream(widget.post.id),
+                          builder: (context, commentsSnapshot) {
+                            final commentCount = commentsSnapshot.data ?? widget.post.comments;
+                            return _buildStatItem(
+                              Icons.chat_bubble_outline,
+                              commentCount.toString(),
+                              context,
+                            );
+                          },
                         ),
-                        _buildStatItem(
-                          Icons.remove_red_eye_outlined,
-                          widget.post.views.toString(),
-                          context,
+                        StreamBuilder<int>(
+                          stream: _postsRepository.getViewsCountStream(widget.post.id),
+                          builder: (context, viewsSnapshot) {
+                            final viewsCount = viewsSnapshot.data ?? widget.post.views;
+                            return _buildStatItem(
+                              Icons.remove_red_eye_outlined,
+                              viewsCount.toString(),
+                              context,
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -233,8 +316,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         ),
                       ),
                       IconButton(
-                        onPressed: _addComment,
-                        icon: Icon(Icons.send, color: theme.colorScheme.primary),
+                        onPressed: () => _addComment(widget.post.id),
+                        icon: _isSendingComment
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Icon(Icons.send, color: theme.colorScheme.primary),
                       ),
                     ],
                   ),
@@ -283,23 +372,40 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   Widget _buildDiscussionTab(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      itemCount: _comments.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 14),
-      itemBuilder: (context, index) {
-        return _buildCommentRow(context, _comments[index]);
+    return StreamBuilder<List<PostComment>>(
+      stream: _commentsStream,
+      builder: (context, snapshot) {
+        final comments = snapshot.data ?? [];
+
+        if (comments.isEmpty) {
+          return Center(
+            child: Text(
+              'No comments yet. Be the first to start the discussion.',
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          itemCount: comments.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 14),
+          itemBuilder: (context, index) {
+            return _buildCommentRow(context, comments[index]);
+          },
+        );
       },
     );
   }
 
-  Widget _buildCommentRow(BuildContext context, CommentPreview comment) {
+  Widget _buildCommentRow(BuildContext context, PostComment comment) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CircleAvatar(
           radius: 18,
-          backgroundImage: NetworkImage(comment.avatarUrl),
+          backgroundImage: NetworkImage(comment.userAvatar),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -316,13 +422,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      comment.username,
+                      comment.userName,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
-                      comment.timestamp,
+                      _formatTimestamp(comment.timestamp),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -340,6 +446,20 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         ),
       ],
     );
+  }
+
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    }
+    return 'Just now';
   }
 
   Widget _buildStatItem(IconData icon, String label, BuildContext context) {

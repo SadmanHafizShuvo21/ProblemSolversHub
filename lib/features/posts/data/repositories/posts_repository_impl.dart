@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:problem_solvers_hub/shared/models/post.dart';
 import 'package:problem_solvers_hub/features/posts/data/datasources/firebase_posts_datasource.dart';
 import 'package:problem_solvers_hub/features/posts/data/models/comment_model.dart';
@@ -47,13 +48,36 @@ class PostsRepositoryImpl implements PostsRepository {
   }
 
   @override
-  Future<void> likePost(String postId) async {
-    await datasource.likePost(postId);
+  Future<void> likePost(String postId, {String? userId}) async {
+    final resolvedUserId = userId ?? FirebaseAuth.instance.currentUser?.uid;
+    if (resolvedUserId == null) {
+      throw Exception('User must be signed in to like a post.');
+    }
+    await datasource.likePost(postId, resolvedUserId);
   }
 
   @override
-  Future<void> unlikePost(String postId) async {
-    await datasource.unlikePost(postId);
+  Future<void> unlikePost(String postId, {String? userId}) async {
+    final resolvedUserId = userId ?? FirebaseAuth.instance.currentUser?.uid;
+    if (resolvedUserId == null) {
+      throw Exception('User must be signed in to unlike a post.');
+    }
+    await datasource.unlikePost(postId, resolvedUserId);
+  }
+
+  @override
+  Future<bool> hasUserLikedPost(String postId, String userId) {
+    return datasource.hasUserLikedPost(postId, userId);
+  }
+
+  @override
+  Stream<bool> getLikeStatusStream(String postId, String userId) {
+    return datasource.getLikeStatusStream(postId, userId);
+  }
+
+  @override
+  Stream<int> getLikesCountStream(String postId) {
+    return datasource.getLikesCountStream(postId);
   }
 
   @override
@@ -73,8 +97,32 @@ class PostsRepositoryImpl implements PostsRepository {
   }
 
   @override
+  Stream<int> getCommentsCountStream(String postId) {
+    return datasource.getCommentsCountStream(postId);
+  }
+
+  @override
   Stream<Post?> getPostByIdStream(String postId) {
     return datasource.getPostByIdStream(postId).map((post) => post?.toEntity());
+  }
+
+  @override
+  Future<void> recordView(String postId, {String? userId}) async {
+    final resolvedUserId = userId ?? FirebaseAuth.instance.currentUser?.uid;
+    if (resolvedUserId == null) {
+      return;
+    }
+    await datasource.recordView(postId, resolvedUserId);
+  }
+
+  @override
+  Future<bool> hasUserViewedPost(String postId, String userId) {
+    return datasource.hasUserViewedPost(postId, userId);
+  }
+
+  @override
+  Stream<int> getViewsCountStream(String postId) {
+    return datasource.getViewsCountStream(postId);
   }
 
   @override

@@ -260,17 +260,26 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
 
     return authState.when(
       loading: () => Scaffold(
-        appBar: AppBar(title: const Text('Profile Settings')),
+        appBar: AppBar(
+          leading: BackButton(color: isDark ? Colors.white : Colors.black),
+          title: const Text('Profile Settings'),
+        ),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (error, _) => Scaffold(
-        appBar: AppBar(title: const Text('Profile Settings')),
+        appBar: AppBar(
+          leading: BackButton(color: isDark ? Colors.white : Colors.black),
+          title: const Text('Profile Settings'),
+        ),
         body: Center(child: Text('Error loading settings: $error')),
       ),
       data: (user) {
         if (user == null) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Profile Settings')),
+            appBar: AppBar(
+              leading: BackButton(color: isDark ? Colors.white : Colors.black),
+              title: const Text('Profile Settings'),
+            ),
             body: const Center(child: Text('You must be logged in to update settings.')),
           );
         }
@@ -294,6 +303,7 @@ class _ProfileSettingsScreenState extends ConsumerState<ProfileSettingsScreen> {
         return Scaffold(
           backgroundColor: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF5F7FA),
           appBar: AppBar(
+            leading: BackButton(color: isDark ? Colors.white : Colors.black),
             elevation: 0,
             backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
             title: const Text(

@@ -341,6 +341,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
+        leading: BackButton(color: theme.colorScheme.onSurface),
         title: const Text('Create Post'),
         actions: [
           if (_isSubmitting)

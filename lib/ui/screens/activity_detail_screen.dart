@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ActivityDetailScreen extends StatelessWidget {
@@ -199,7 +200,13 @@ class ActivityDetailScreen extends StatelessWidget {
           ),
           child: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: theme.colorScheme.onSurface),
         ),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          if (Navigator.canPop(context)) {
+            Navigator.of(context).pop();
+          } else {
+            context.go('/');
+          }
+        },
       ),
       title: Text(
         problemName,
@@ -349,7 +356,7 @@ class ActivityDetailScreen extends StatelessWidget {
           InkWell(
             onTap: () {
               if (hasValidLink) {
-                _launchURL(problemLink!, context);
+                _launchURL(problemLink, context);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -394,19 +401,23 @@ class ActivityDetailScreen extends StatelessWidget {
             children: [
               Icon(Icons.fingerprint, size: 14, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(width: 4),
-              Text(
-                'ID: $platform-$problemId',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: theme.colorScheme.onSurfaceVariant,
+              Expanded(
+                child: Text(
+                  'ID: $platform-$problemId',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               const Spacer(),
-              Text(
-                'Submitted ${timestamp != null ? DateFormat.MMMd().format(timestamp) : 'Unknown date'}',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: theme.colorScheme.onSurfaceVariant,
+              Expanded(
+                child: Text(
+                  'Submitted ${timestamp != null ? DateFormat.MMMd().format(timestamp) : 'Unknown date'}',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],
@@ -937,6 +948,29 @@ class ActivityDetailScreen extends StatelessWidget {
     return null;
   }
 
+  static Uri? _buildLaunchUri(String url) {
+    var normalized = url.trim();
+    if (normalized.isEmpty) return null;
+
+    if (!normalized.startsWith(RegExp(r'https?://'))) {
+      normalized = 'https://$normalized';
+    }
+
+    try {
+      final uri = Uri.parse(normalized);
+      if (!uri.hasScheme || uri.host.isEmpty) return null;
+      return uri;
+    } catch (_) {
+      try {
+        final encoded = Uri.encodeFull(normalized);
+        final uri = Uri.parse(encoded);
+        return uri.hasScheme && uri.host.isNotEmpty ? uri : null;
+      } catch (_) {
+        return null;
+      }
+    }
+  }
+
   static List<String> _extractTags(Map<String, dynamic> source) {
     final tags = <String>[];
     
@@ -984,33 +1018,32 @@ class ActivityDetailScreen extends StatelessWidget {
     // Clean the URL
     String cleanUrl = url.trim();
     
-    // Check if it's a valid URL
-    if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
-      cleanUrl = 'https://$cleanUrl';
+    // Normalize the URL for both Android and web.
+    final Uri? uri = _buildLaunchUri(cleanUrl);
+    if (uri == null) {
+      throw Exception('Invalid URL format: $cleanUrl');
     }
 
     try {
-      final Uri uri = Uri.parse(cleanUrl);
-      
-      // Check if can launch
-      final bool canLaunch = await canLaunchUrl(uri);
-      
-      if (canLaunch) {
-        await launchUrl(
+      bool launched = false;
+
+      if (await canLaunchUrl(uri)) {
+        launched = await launchUrl(
           uri,
           mode: LaunchMode.externalApplication,
         );
-      } else {
-        // Try with web view fallback
-        final bool canLaunchFallback = await canLaunchUrl(Uri.parse(cleanUrl));
-        if (canLaunchFallback) {
-          await launchUrl(
-            Uri.parse(cleanUrl),
-            mode: LaunchMode.externalApplication,
-          );
-        } else {
-          throw Exception('Cannot launch URL');
-        }
+      }
+
+      if (!launched) {
+        launched = await launchUrl(
+          uri,
+          mode: LaunchMode.inAppWebView,
+          webViewConfiguration: const WebViewConfiguration(enableJavaScript: true),
+        );
+      }
+
+      if (!launched) {
+        throw Exception('Cannot launch URL');
       }
     } catch (e) {
       debugPrint('Error launching URL: $e');

@@ -20,11 +20,20 @@ abstract class PostsRepository {
   /// Delete a post
   Future<void> deletePost(String postId);
 
-  /// Like a post
-  Future<void> likePost(String postId);
+  /// Like a post as a specific user
+  Future<void> likePost(String postId, {String? userId});
 
-  /// Unlike a post
-  Future<void> unlikePost(String postId);
+  /// Unlike a post as a specific user
+  Future<void> unlikePost(String postId, {String? userId});
+
+  /// Check whether a user has already liked a post
+  Future<bool> hasUserLikedPost(String postId, String userId);
+
+  /// Stream the current user's like status for a post
+  Stream<bool> getLikeStatusStream(String postId, String userId);
+
+  /// Stream the total likes count for a post
+  Stream<int> getLikesCountStream(String postId);
 
   /// Add a comment to a post
   Future<PostComment> addComment(String postId, PostComment comment);
@@ -32,8 +41,20 @@ abstract class PostsRepository {
   /// Stream comments for a post
   Stream<List<PostComment>> getCommentsStream(String postId);
 
+  /// Stream the total comments count for a post
+  Stream<int> getCommentsCountStream(String postId);
+
   /// Stream a single post for real-time updates
   Stream<Post?> getPostByIdStream(String postId);
+
+  /// Record a view for a specific user, counting only once per user per post
+  Future<void> recordView(String postId, {String? userId});
+
+  /// Check whether a user has viewed a post
+  Future<bool> hasUserViewedPost(String postId, String userId);
+
+  /// Stream the total views count for a post
+  Stream<int> getViewsCountStream(String postId);
 
   /// Increment view count
   Future<void> incrementViews(String postId);

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:problem_solvers_hub/features/posts/domain/entities/comment.dart';
 
 class CommentModel extends PostComment {
@@ -12,6 +13,19 @@ class CommentModel extends PostComment {
   }) : super();
 
   factory CommentModel.fromJson(Map<String, dynamic> json, String documentId) {
+    final rawTimestamp = json['timestamp'];
+    DateTime parsedTimestamp;
+
+    if (rawTimestamp is DateTime) {
+      parsedTimestamp = rawTimestamp;
+    } else if (rawTimestamp is String) {
+      parsedTimestamp = DateTime.tryParse(rawTimestamp) ?? DateTime.now();
+    } else if (rawTimestamp is Timestamp) {
+      parsedTimestamp = rawTimestamp.toDate();
+    } else {
+      parsedTimestamp = DateTime.now();
+    }
+
     return CommentModel(
       id: documentId,
       postId: json['postId'] as String,
@@ -19,7 +33,7 @@ class CommentModel extends PostComment {
       userAvatar: json['userAvatar'] as String,
       userName: json['userName'] as String,
       text: json['text'] as String,
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      timestamp: parsedTimestamp,
     );
   }
 

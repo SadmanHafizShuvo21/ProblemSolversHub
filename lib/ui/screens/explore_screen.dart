@@ -127,7 +127,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     _viewedPostKeys.add(key);
     try {
       if (post.id != null) {
-        await _postsRepository.incrementViews(post.id!);
+        await _postsRepository.recordView(post.id!);
       }
     } catch (_) {
       // Ignore view update failures, keep local UX consistent.
@@ -269,25 +269,84 @@ class _ExploreScreenState extends State<ExploreScreen> {
         ),
         child: RefreshIndicator(
           onRefresh: _refreshPosts,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
-                _buildSearchBar(context),
-                const SizedBox(height: 24),
-                _buildTopicsSection(theme),
-                const SizedBox(height: 26),
-                _buildPostsHeader(theme),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: _errorMessage != null
-                      ? _buildErrorState(theme)
-                      : _buildPostsContent(theme),
+          child: CustomScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      _buildSearchBar(context),
+                      const SizedBox(height: 18),
+                      _buildTopicsSection(theme),
+                      const SizedBox(height: 22),
+                      _buildPostsHeader(theme),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+              if (_errorMessage != null)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildErrorState(theme),
+                  ),
+                )
+              else if (_isLoading && _displayedPosts.isEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        height: 190,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(22),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                      ),
+                      childCount: 4,
+                    ),
+                  ),
+                )
+              else if (_displayedPosts.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildEmptyState(theme),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final post = _displayedPosts[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 18),
+                          child: _buildExploreCard(context, index, post, theme),
+                        );
+                      },
+                      childCount: _displayedPosts.length,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),
@@ -332,7 +391,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         gradient: isFocused
             ? LinearGradient(
@@ -345,18 +404,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
               )
             : null,
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isFocused
               ? const Color(0xFF6366F1)
               : theme.dividerColor.withOpacity(0.5),
-          width: 1.2,
+          width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isFocused ? 0.16 : 0.06),
-            blurRadius: isFocused ? 22 : 12,
-            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(isFocused ? 0.12 : 0.04),
+            blurRadius: isFocused ? 14 : 8,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -364,19 +423,20 @@ class _ExploreScreenState extends State<ExploreScreen> {
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 260),
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: isFocused
                   ? const Color(0xFF6366F1)
                   : theme.colorScheme.primary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               Icons.search_rounded,
+              size: 20,
               color: isFocused ? Colors.white : const Color(0xFF65748B),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: TextField(
               focusNode: _searchFocusNode,
@@ -384,6 +444,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               onChanged: _filterPosts,
               cursorColor: const Color(0xFF6366F1),
               decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
                 hintText: 'Search problems, tags, authors...',
                 hintStyle: TextStyle(
                   color: theme.textTheme.bodySmall?.color?.withOpacity(0.68),
@@ -394,9 +455,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   opacity: _searchController.text.isNotEmpty ? 1 : 0,
                   duration: const Duration(milliseconds: 220),
                   child: IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                     icon: const Icon(
                       Icons.clear_rounded,
                       color: Color(0xFF94A3B8),
+                      size: 18,
                     ),
                     onPressed: () {
                       _searchController.clear();
@@ -623,7 +687,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 260),
-          transform: Matrix4.identity()..translate(0, isHovered ? -4 : 0),
+          transform: Matrix4.translationValues(0, isHovered ? -4 : 0, 0),
+          transformAlignment: Alignment.center,
           curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
             gradient: LinearGradient(

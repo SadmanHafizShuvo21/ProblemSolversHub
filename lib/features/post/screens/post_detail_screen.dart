@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -27,6 +28,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   int _pendingCommentDelta = 0;
   late final Stream<Post?> _postStream;
   late final Stream<List<PostComment>> _commentsStream;
+  late final Stream<bool> _likeStatusStream;
 
   @override
   void initState() {
@@ -38,8 +40,26 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       throw StateError('Post id is required to load details.');
     }
 
-    _postStream = getIt<PostsRepository>().getPostByIdStream(postId);
-    _commentsStream = getIt<PostsRepository>().getCommentsStream(postId);
+    final repository = getIt<PostsRepository>();
+    _postStream = repository.getPostByIdStream(postId);
+    _commentsStream = repository.getCommentsStream(postId);
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    _likeStatusStream = currentUser != null
+        ? repository.getLikeStatusStream(postId, currentUser.uid)
+        : Stream<bool>.value(false);
+
+    _likeStatusStream.listen((liked) {
+      if (mounted) {
+        setState(() {
+          _liked = liked;
+        });
+      }
+    });
+
+    if (currentUser != null) {
+      Future.microtask(() => repository.recordView(postId));
+    }
   }
 
   @override

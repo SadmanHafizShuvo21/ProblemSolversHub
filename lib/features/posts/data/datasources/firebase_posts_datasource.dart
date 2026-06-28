@@ -110,9 +110,24 @@ class FirebasePostsDatasource {
     }
   }
 
-  /// Like a post
-  Future<void> likePost(String postId) async {
+  static const String _likesCollection = 'likes';
+  static const String _commentsCollection = 'comments';
+  static const String _viewsCollection = 'views';
+
+  /// Like a post by a user
+  Future<void> likePost(String postId, String userId) async {
     try {
+      final likeId = '${userId}_$postId';
+      final likeRef = _firestore.collection(_likesCollection).doc(likeId);
+      final snapshot = await likeRef.get();
+      if (snapshot.exists) return;
+
+      await likeRef.set({
+        'postId': postId,
+        'userId': userId,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
       await _firestore.collection(_collectionName).doc(postId).update({
         'likes': FieldValue.increment(1),
       });
@@ -121,9 +136,34 @@ class FirebasePostsDatasource {
     }
   }
 
-  /// Unlike a post
-  Future<void> unlikePost(String postId) async {
+  /// Check whether a specific user liked a post
+  Future<bool> hasUserLikedPost(String postId, String userId) async {
     try {
+      final likeId = '${userId}_$postId';
+      final doc = await _firestore.collection(_likesCollection).doc(likeId).get();
+      return doc.exists;
+    } catch (e) {
+      throw Exception('Failed to check like status: $e');
+    }
+  }
+
+  /// Stream like status for a user on a post
+  Stream<bool> getLikeStatusStream(String postId, String userId) {
+    final likeId = '${userId}_$postId';
+    return _firestore.collection(_likesCollection).doc(likeId).snapshots().map(
+          (doc) => doc.exists,
+        );
+  }
+
+  /// Unlike a post by a user
+  Future<void> unlikePost(String postId, String userId) async {
+    try {
+      final likeId = '${userId}_$postId';
+      final likeRef = _firestore.collection(_likesCollection).doc(likeId);
+      final snapshot = await likeRef.get();
+      if (!snapshot.exists) return;
+
+      await likeRef.delete();
       await _firestore.collection(_collectionName).doc(postId).update({
         'likes': FieldValue.increment(-1),
       });
@@ -132,15 +172,13 @@ class FirebasePostsDatasource {
     }
   }
 
-  /// Increment view count
-  Future<void> incrementViews(String postId) async {
-    try {
-      await _firestore.collection(_collectionName).doc(postId).update({
-        'views': FieldValue.increment(1),
-      });
-    } catch (e) {
-      throw Exception('Failed to increment views: $e');
-    }
+  /// Stream total likes count for a post
+  Stream<int> getLikesCountStream(String postId) {
+    return _firestore
+        .collection(_likesCollection)
+        .where('postId', isEqualTo: postId)
+        .snapshots()
+        .map((snapshot) => snapshot.size);
   }
 
   /// Stream of all posts (real-time updates)
@@ -181,22 +219,71 @@ class FirebasePostsDatasource {
     });
   }
 
-  /// Create a comment in a post comments subcollection
+  /// Record a unique view for a user on a post
+  Future<void> recordView(String postId, String userId) async {
+    try {
+      final viewId = '${userId}_$postId';
+      final viewRef = _firestore.collection(_viewsCollection).doc(viewId);
+      final snapshot = await viewRef.get();
+      if (snapshot.exists) return;
+
+      await viewRef.set({
+        'postId': postId,
+        'userId': userId,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      await _firestore.collection(_collectionName).doc(postId).update({
+        'views': FieldValue.increment(1),
+      });
+    } catch (e) {
+      throw Exception('Failed to record view: $e');
+    }
+  }
+
+  /// Check whether a user has already viewed a post
+  Future<bool> hasUserViewedPost(String postId, String userId) async {
+    try {
+      final viewId = '${userId}_$postId';
+      final snapshot = await _firestore.collection(_viewsCollection).doc(viewId).get();
+      return snapshot.exists;
+    } catch (e) {
+      throw Exception('Failed to check view status: $e');
+    }
+  }
+
+  /// Increment the view count for a post without tracking a specific user
+  Future<void> incrementViews(String postId) async {
+    try {
+      await _firestore.collection(_collectionName).doc(postId).update({
+        'views': FieldValue.increment(1),
+      });
+    } catch (e) {
+      throw Exception('Failed to increment views: $e');
+    }
+  }
+
+  /// Stream total views count for a post
+  Stream<int> getViewsCountStream(String postId) {
+    return _firestore
+        .collection(_viewsCollection)
+        .where('postId', isEqualTo: postId)
+        .snapshots()
+        .map((snapshot) => snapshot.size);
+  }
+
+  /// Create a comment in the top-level comments collection
   Future<CommentModel> createComment(
     String postId,
     CommentModel comment,
   ) async {
     try {
-      final commentRef = _firestore
-          .collection(_collectionName)
-          .doc(postId)
-          .collection('comments')
-          .doc();
+      final commentRef = _firestore.collection(_commentsCollection).doc();
 
       final commentData = comment.toJson();
       commentData['id'] = commentRef.id;
       commentData['postId'] = postId;
-      commentData['createdAt'] = FieldValue.serverTimestamp();
+      commentData['timestamp'] = FieldValue.serverTimestamp();
 
       await commentRef.set(commentData);
 
@@ -210,12 +297,11 @@ class FirebasePostsDatasource {
     }
   }
 
-  /// Stream comments for a single post
+  /// Stream comments for a single post from the top-level collection
   Stream<List<CommentModel>> getCommentsStream(String postId) {
     return _firestore
-        .collection(_collectionName)
-        .doc(postId)
-        .collection('comments')
+        .collection(_commentsCollection)
+        .where('postId', isEqualTo: postId)
         .orderBy('timestamp', descending: false)
         .snapshots()
         .map(
@@ -223,5 +309,14 @@ class FirebasePostsDatasource {
               .map((doc) => CommentModel.fromJson(doc.data(), doc.id))
               .toList(),
         );
+  }
+
+  /// Stream comment count for a single post
+  Stream<int> getCommentsCountStream(String postId) {
+    return _firestore
+        .collection(_commentsCollection)
+        .where('postId', isEqualTo: postId)
+        .snapshots()
+        .map((snapshot) => snapshot.size);
   }
 }

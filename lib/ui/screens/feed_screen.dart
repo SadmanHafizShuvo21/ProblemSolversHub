@@ -1,4 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:problem_solvers_hub/core/service_locator.dart';
+import 'package:problem_solvers_hub/features/posts/domain/repositories/posts_repository.dart';
+import 'package:problem_solvers_hub/shared/models/post.dart';
 import 'package:problem_solvers_hub/ui/models/dummy_data.dart';
 import 'package:problem_solvers_hub/ui/screens/post_detail_screen.dart';
 import 'package:problem_solvers_hub/ui/widgets/post_card.dart';
@@ -12,6 +17,12 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen>
     with SingleTickerProviderStateMixin {
+  final PostsRepository _postsRepository = getIt<PostsRepository>();
+  late final StreamSubscription<List<Post>> _postsSubscription;
+  final List<PostPreview> _posts = [];
+  bool _isLoadingPosts = true;
+  String? _postsError;
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   String _selectedTopic = 'All';
@@ -22,12 +33,12 @@ class _FeedScreenState extends State<FeedScreen>
 
   final List<String> _topics = [
     'All',
-    'Technology',
-    'Science',
-    'Art',
-    'Design',
-    'Business',
-    'Health',
+    'Binary Search',
+    'Brute Force',
+    'Grid Traversal',
+    'Implementation',
+    'Math',
+    'String',
   ];
 
   final List<Map<String, dynamic>> _bottomTabs = [
@@ -59,21 +70,77 @@ class _FeedScreenState extends State<FeedScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
     _animationController.forward();
+
+    _postsSubscription = _postsRepository.getAllPostsStream().listen(
+      (posts) {
+        if (!mounted) return;
+        setState(() {
+          _isLoadingPosts = false;
+          _posts
+            ..clear()
+            ..addAll(posts.map(_convertPostToPreview));
+          _postsError = null;
+        });
+      },
+      onError: (error) {
+        if (!mounted) return;
+        setState(() {
+          _isLoadingPosts = false;
+          _postsError = error?.toString();
+        });
+      },
+    );
   }
 
   @override
   void dispose() {
+    _postsSubscription.cancel();
     _animationController.dispose();
     super.dispose();
   }
 
   List<PostPreview> get _filteredPosts {
-    if (_selectedTopic == 'All') {
-      return kFeedPosts;
-    }
-    return kFeedPosts
-        .where((post) => post.tags.contains(_selectedTopic))
-        .toList();
+    final posts = _selectedTopic == 'All'
+        ? _posts
+        : _posts.where((post) => post.tags.contains(_selectedTopic)).toList();
+    return posts;
+  }
+
+  PostPreview _convertPostToPreview(Post post) {
+    final timestamp = _formatTimestamp(post.timestamp);
+
+    return PostPreview(
+      id: post.id ?? '',
+      username: post.userName,
+      avatarUrl: post.userAvatar.isNotEmpty
+          ? post.userAvatar
+          : 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=80',
+      difficulty: post.difficulty,
+      title: post.problemTitle,
+      platform: post.platform,
+      tags: post.tags,
+      preview: post.approachPreview.isNotEmpty
+          ? post.approachPreview
+          : post.approachFull.isNotEmpty
+              ? post.approachFull
+              : 'Discover a new problem-solving approach.',
+      likes: post.likes,
+      comments: post.comments,
+      views: post.views,
+      timestamp: timestamp,
+      approach: post.approachFull,
+      code: post.codeSnippet,
+    );
+  }
+
+  String _formatTimestamp(DateTime dateTime) {
+    final duration = DateTime.now().difference(dateTime);
+
+    if (duration.inMinutes < 1) return 'Just now';
+    if (duration.inHours < 1) return '${duration.inMinutes}m ago';
+    if (duration.inDays < 1) return '${duration.inHours}h ago';
+    if (duration.inDays < 7) return '${duration.inDays}d ago';
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
   }
 
   @override
@@ -86,7 +153,6 @@ class _FeedScreenState extends State<FeedScreen>
       extendBody: true,
       backgroundColor: backgroundColor,
       appBar: _buildAppBar(theme, isDark),
-      
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -115,12 +181,42 @@ class _FeedScreenState extends State<FeedScreen>
                   ]),
                 ),
               ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: _isGridView
-                    ? _buildGridView(theme, isDark)
-                    : _buildListView(theme, isDark),
-              ),
+              if (_isLoadingPosts)
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (_postsError != null)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Text(
+                      'Unable to load posts. Please try again later.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                )
+              else if (_filteredPosts.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Text(
+                      'No posts available yet. Check back soon.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: _isGridView
+                      ? _buildGridView(theme, isDark)
+                      : _buildListView(theme, isDark),
+                ),
               const SliverPadding(
                 padding: EdgeInsets.symmetric(vertical: 20),
                 sliver: SliverToBoxAdapter(
@@ -144,30 +240,6 @@ class _FeedScreenState extends State<FeedScreen>
         padding: const EdgeInsets.only(left: 20, top: 8),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [const Color(0xFF6C63FF), const Color(0xFF5F9EA0)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF6C63FF).withOpacity(0.3),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.rocket_launch_rounded,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -175,7 +247,7 @@ class _FeedScreenState extends State<FeedScreen>
                   'ProblemSolvers',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : const Color(0xFF1A1F36),
+                    color: isDark ? Colors.blue : const Color(0xFF1A1F36),
                     letterSpacing: -0.5,
                     fontSize: 20,
                   ),
@@ -744,7 +816,7 @@ class _FeedScreenState extends State<FeedScreen>
         crossAxisCount: 2,
         crossAxisSpacing: 14,
         mainAxisSpacing: 14,
-        childAspectRatio: 0.60,
+        childAspectRatio: 0.50,
       ),
       delegate: SliverChildBuilderDelegate(
         (context, index) {

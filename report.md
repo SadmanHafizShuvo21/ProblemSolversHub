@@ -1,243 +1,292 @@
 # ProblemSolversHub - Project Report
 
-## 1. Project Overview
+## 1. Overview
 
 ### Project name
 - `ProblemSolversHub`
 
-### Main purpose and objectives
-- A Flutter application for creating, sharing, discovering, and collaborating around programming problem solutions.
-- Helps users publish problem explanations, code snippets, and learning notes while connecting through a community-like feed.
-- Leverages Firebase backend services to provide authentication, data storage, and analytics.
+### Project overview
+ProblemSolversHub is a cross-platform Flutter application designed to help developers and learners create, share, discover, and collaborate on programming problem solutions. The app emphasizes structured solution posts, community feedback, and searchable learning content powered by Firebase.
+
+### Main purpose
+- Enable users to document algorithmic and competitive programming solutions.
+- Build a knowledge-sharing environment for problem-solving techniques.
+- Support collaborative learning through comments, likes, and post discovery.
 
 ### Target users
-- Competitive programming students and developers.
-- Learners who want to document solutions and learn from others.
-- Users interested in sharing code walkthroughs, approach reasoning, and problem-solving techniques.
+- Competitive programming students.
+- Software developers learning new algorithms and patterns.
+- Teachers and mentors sharing problem-solving strategies.
+- Developers building a portfolio of code walkthroughs.
 
-### Core features
-- Email/password authentication and Google Sign-In.
-- User profile management and settings.
-- Create problem solution posts with tags, difficulty, approach, code, and metadata.
-- Feed and explore screens for browsing posts.
-- Post detail pages with comments, likes, and tabbed discussion.
-- Integration with Firebase Auth, Firestore, Storage, and Analytics.
+## 2. Goal
 
----
+### Primary goal
+Deliver an interactive platform where users can publish detailed problem solutions, search for learning content, and engage with peers through a modern app interface.
 
-## 2. Technology Stack
+### Secondary goals
+- Provide easy onboarding with Firebase authentication.
+- Organize content by difficulty, tags, and problem type.
+- Support user profiles, activity tracking, and post interaction.
+- Build an extensible architecture for future growth.
 
-### Frontend technologies
-- Flutter
-- Dart
+## 3. Motivation
 
-### Backend technologies
-- Firebase Auth
-- Cloud Firestore
-- Firebase Storage
-- Firebase Analytics
+### Why this project exists
+- Many learners struggle to retain solutions without a centralized note system.
+- Existing competitive programming platforms focus on contests, not solution storytelling.
+- There is demand for a space where users can write explanations, include code examples, and get community validation.
 
-### Database(s)
-- Cloud Firestore
-  - `users`
-  - `posts`
-  - `problems`
-  - `posts/{postId}/comments`
+### User value
+- Helps users review and reuse problem explanations later.
+- Encourages community learning and feedback.
+- Creates a reusable knowledge base for exam preparation and interview study.
 
-### Frameworks, libraries, and tools
-- `go_router` for navigation
-- `get_it` for DI/service location
-- `riverpod` and `flutter_riverpod` for state management
-- `flutter_bloc` for BLoC-based state handling
-- `google_sign_in` for OAuth login
-- `image_picker` for profile picture selection
-- `flutter_dotenv` for environment variable loading
-- `google_fonts` for typography
-- `validators` for form validation
-- `intl` for formatting
-- `url_launcher` for opening external links
+## 4. Job Market Analysis
 
-### Build and deployment tools
-- Flutter CLI (`flutter pub get`, `flutter run`, `flutter build`)
-- Android Gradle wrapper
-- Firebase CLI integration implied by `firebase.json`
+### Industry demand
+- Problem-solving and algorithmic thinking are core skills for software engineering interviews.
+- Employers value candidates who can explain solutions clearly, not just write code.
+- Learning platforms and developer communities are growing rapidly.
 
----
+### Market opportunity
+- EdTech apps focused on coding and algorithms are in demand.
+- Niche solutions that combine note-taking, community interaction, and searchable learning content can attract students and professionals.
 
-## 3. Project Architecture
+### Competitive use cases
+- Students preparing for technical interviews use platforms like LeetCode, HackerRank, and Codeforces.
+- Developers use blogs, GitHub Gists, and community forums to share solutions.
+- ProblemSolversHub can position itself as a learner-centric social repository for problem solutions.
 
-### Folder structure
-- `lib/main.dart` — app entry point with env loading and Firebase initialization.
-- `lib/firebase_options.dart` — generated Firebase config for web, Android, iOS, macOS, Windows.
-- `lib/core/` — shared core utilities, theme, router, DI, providers, Firebase init.
-- `lib/features/` — feature modules grouped by domain:
-  - `auth/` — auth data/repository/domain/presentation.
-  - `create/` — create-post flow and widgets.
-  - `feed/` — feed screen and widgets.
-  - `post/` — post detail view.
-  - `posts/` — domain and data logic for post/problem management.
-- `lib/shared/` — shared models used across features.
-- `lib/ui/` — app shell, global screens, UI widgets.
+## 5. Scope
 
-### Design patterns used
-- Clean architecture elements: domain/usecase/repository/data separation.
-- Repository pattern for auth and posts.
-- Service locator pattern via `GetIt` for DI.
-- Riverpod provider graph for reactive state.
-- BLoC for create-post and auth flows.
-- Shell route and nested routes using `go_router`.
+### In-scope features
+- User authentication with email/password and Google sign-in.
+- Profile creation and editing.
+- Post creation with fields for problem title, source, difficulty, tags, explanation, and code.
+- Browsing and searching solution posts.
+- Post details with comments, likes, and discussion.
+- Firebase backend integration for data persistence and storage.
 
-### Application flow
+### Out-of-scope for current MVP
+- Live multiplayer problem solving.
+- Automated code execution or judging.
+- Complex recommendation engines.
+- Paid subscriptions or premium feature gating.
 
-```mermaid
-flowchart LR
-  A[main.dart] --> B[Load .env]
-  A --> C[setupServiceLocator()]
-  A --> D[ProviderScope]
-  D --> E[FirebaseInitializationSplashScreen]
-  E --> F[ProblemSolversHubApp]
-  F --> G[goRouterProvider]
-  F --> H[authProvider]
-  G --> I[AppShell routes]
-  I --> J[Feed / Explore / Create / Friends / Profile]
-  I --> K[Auth routes]
-  J --> L[Repositories / Datasources]
-  L --> M[Firestore / FirebaseAuth / FirebaseStorage]
-```
+### Future extensions
+- Post editing/version history.
+- Follow system and personalized feeds.
+- Tag-based recommendation and trending problems.
+- Offline draft support and export to PDF.
 
-### API architecture and routing
-- Main route shell wraps primary screens.
-- Auth and public routes are separate from the logged-in shell.
-- Protected navigation uses auth state listeners to redirect users.
-- Router paths include: `/`, `/explore`, `/create`, `/friends`, `/profile`, `/profile/settings`, `/auth`, `/login`, `/signup`, `/forgot-password`, `/activity`.
+## 6. ERD (Entity Relationship Diagram)
 
----
+### Key entities
+- `User`
+- `Post`
+- `Problem`
+- `Comment`
 
-## 4. Feature Analysis
+### Relationship overview
+- A `User` can create multiple `Post` records.
+- A `User` can create multiple `Problem` records.
+- Each `Post` can contain many `Comment` records.
 
-### List of implemented features
-- Email/password signup and login.
-- Google OAuth sign-in.
-- Firebase-authenticated current user state.
-- User profile view and stats.
-- Profile settings with bio, social links, skills, preferences.
-- Create post process with multi-step form.
-- Saving posts to Firestore.
-- Creating problem records in a separate `problems` collection.
-- Explore search and topic filtering.
-- Post detail view with comments and likes.
-- Real-time post/comment streams in some flows.
-
-### Feature details
-#### Authentication
-- `FirebaseAuthDatasource` implements login, signup, Google sign-in, logout, current user retrieval, profile update, image upload, account deletion.
-- `AuthNotifier` and `AuthBloc` manage auth state.
-- Auth UI includes `/login`, `/signup`, `/auth`, `/forgot-password` screens.
-
-#### Create post
-- `CreatePostPage` is a three-step flow: problem info, approach, review.
-- `CreatePostBloc` submits posts and creates both `posts` and `problems` documents.
-- Validation ensures required fields before advancing steps.
-
-#### Feed and explore
-- `FeedScreen` currently renders dummy posts and contains TODOs for search and notifications.
-- `ExploreScreen` loads posts from Firestore and filters locally.
-- Sorting UI is present but not fully implemented.
-
-#### Post detail
-- `PostDetailScreen` uses streams for post updates and comments.
-- Supports comment submission and like state logic.
-- Shows author, timestamp, difficulty badge, and discussion tab.
-
-#### Profile and settings
-- `ProfileScreen` renders user profile, stats, achievements, and user posts.
-- `ProfileSettingsScreen` allows updating profile fields and account preferences.
-- Settings screen handles profile image selection and upload.
-
-### Incomplete / partial features
-- `FeedScreen` is still dummy-backed and not connected to Firestore.
-- Explore sorting is UI-only and does not reorder actual Firestore queries.
-- Feed bottom navigation in `FeedScreen` has placeholder route handling.
-- Profile edit button in `ProfileScreen` is not wired to navigation.
-- Environment variables are loaded but not used for Firebase config.
-- Firestore rules do not match field names used by the app.
-
----
-
-## 5. Database Analysis
-
-### Collections and relationships
-- `users` collection: user profile and preferences.
-- `posts` collection: published problem solutions.
-- `problems` collection: problem metadata and approach data.
-- `posts/{postId}/comments`: comments for each post.
-
-### Relationship diagram
+### ERD
 
 ```mermaid
-graph LR
-  Users -->|owns| Posts
-  Users -->|owns| Problems
-  Posts -->|has| Comments
+erDiagram
+  USER ||--o{ POST : creates
+  USER ||--o{ PROBLEM : creates
+  POST ||--o{ COMMENT : has
+  USER ||--o{ COMMENT : writes
+
+  USER {
+    string uid
+    string name
+    string email
+    string photoUrl
+    string bio
+    list skills
+    datetime createdAt
+  }
+  POST {
+    string id
+    string authorId
+    string title
+    string description
+    string codeSnippet
+    string difficulty
+    list tags
+    int likes
+    datetime createdAt
+    datetime updatedAt
+  }
+  PROBLEM {
+    string id
+    string creatorId
+    string problemName
+    string source
+    string difficulty
+    list tags
+    string summary
+    datetime createdAt
+  }
+  COMMENT {
+    string id
+    string postId
+    string authorId
+    string content
+    datetime createdAt
+  }
 ```
 
-### Data flow between application layers
-- UI screens trigger event actions.
-- BLoC / providers call usecases.
-- Usecases call repositories.
-- Repositories delegate to Firebase datasources.
-- Datasources read/write Firestore and Storage.
+## 7. Database Schema
 
-### Auth / authorization mechanisms
-- Firebase Auth is used for login and session state.
-- `authProvider` maintains current user state.
-- App routes redirect based on auth state.
-- Firestore security rules require authenticated access for reads/writes.
+### Firestore collections
+- `users`
+- `posts`
+- `problems`
+- `posts/{postId}/comments`
 
----
+### Recommended schema details
 
-## 6. Code Quality Assessment
+#### `users` document
+- `uid`: string
+- `displayName`: string
+- `email`: string
+- `photoUrl`: string
+- `bio`: string
+- `skills`: array<string>
+- `socialLinks`: map<string, string>
+- `joinedAt`: timestamp
+- `postCount`: number
 
-### Strengths
-- Feature-based project structure.
-- Good separation of domain, data, and presentation in auth/posts modules.
-- Strong UI with polished screens and consistent theming.
-- Good Firebase initialization error handling.
-- Use of streams and reactive state for real-time updates.
+#### `posts` document
+- `id`: string
+- `authorId`: string (ref to `users`)
+- `title`: string
+- `description`: string
+- `approach`: string
+- `code`: string
+- `difficulty`: string
+- `tags`: array<string>
+- `likeCount`: number
+- `commentCount`: number
+- `createdAt`: timestamp
+- `updatedAt`: timestamp
 
-### Potential bugs or issues
-- Duplicate architecture: `GetIt` DI plus Riverpod providers.
-- Inconsistent path: some UI writes directly to Firestore while other flows use repositories.
-- `FeedScreen` still dummy content.
-- `ExploreScreen` sorts with stubbed implementation.
-- Mismatch between Firestore rules and actual model fields.
-- `flutter_dotenv` is loaded but not used for actual Firebase config.
-- `CreatePostScreen` in UI and `CreatePostBloc` both exist, potentially duplicating create logic.
+#### `problems` document
+- `id`: string
+- `creatorId`: string
+- `problemName`: string
+- `source`: string
+- `difficulty`: string
+- `tagList`: array<string>
+- `summary`: string
+- `createdAt`: timestamp
 
-### Security concerns
-- Firebase config keys are present in source-controlled files.
-- Firestore rules do not reflect the app's actual field names.
-- Some Firestore writes occur without repository-level validation.
-- User profile access, public listing, and data ownership checks may not be fully aligned with current code.
+#### `comments` document under `posts/{postId}/comments`
+- `id`: string
+- `postId`: string
+- `authorId`: string
+- `content`: string
+- `createdAt`: timestamp
 
-### Performance concerns
-- Explore fetches all posts and filters client-side.
-- No pagination on post lists or comments.
-- Real-time streams could be expensive without query limits.
-- Some features load full collections without constraints.
+## 8. Schema Diagram
 
-### Maintainability assessment
-- Good modular structure but mixed patterns reduce maintainability.
-- Duplicate state management tech increases cognitive load.
-- Lack of tests in repository.
-- Some duplicated dependencies (`riverpod_generator` in both sections).
+```mermaid
+flowchart TD
+  User[User Collection]
+  Post[Posts Collection]
+  Problem[Problems Collection]
+  Comment[Comments Subcollection]
 
----
+  User -->|authorId| Post
+  User -->|creatorId| Problem
+  Post -->|postId| Comment
+  User -->|authorId| Comment
+```
 
-## 7. Dependencies Report
+## 9. Development Plan
 
-### Major packages
-- `flutter`, `dart`
+### Phase 1: Core MVP
+- Set up Flutter project and Firebase integration.
+- Implement authentication and user profile.
+- Build create-post flow and store posts in Firestore.
+- Create feed/explore screens for browsing posts.
+- Add post detail pages and comments.
+- Validate data and handle basic error states.
+
+### Phase 2: Polish and stability
+- Add search, filtering, and tag-based discovery.
+- Improve UI/UX for profile and create flows.
+- Add analytics and basic performance optimizations.
+- Review Firestore rules and security.
+- Add device-specific support for web, mobile, and desktop.
+
+### Phase 3: Growth features
+- Add following, notifications, and personalized feed.
+- Add post editing and draft support.
+- Implement recommendation and trending content.
+- Add advanced search by difficulty, tags, and author.
+
+### Phase 4: Production readiness
+- Add tests: unit, widget, and integration.
+- Harden security rules and validate all Firestore access.
+- Add documentation and developer onboarding.
+- Prepare release builds for target platforms.
+
+## 10. Comparison with Existing Apps/Websites
+
+### Existing competitors
+- LeetCode / HackerRank / Codeforces
+- GeeksforGeeks blog and editorial posts
+- Dev.to and Medium coding articles
+- GitHub Gists and personal solution blogs
+
+### Comparative strengths of ProblemSolversHub
+- Focused on user-authored solution posts with structured fields.
+- Combines social engagement with problem explanations.
+- Built as a mobile and desktop Flutter app rather than a website only.
+- Includes community interactions like comments and likes.
+
+### Comparative weaknesses
+- Not yet a competitive coding platform with problem execution or scoring.
+- Less mature discovery/search compared to large established sites.
+- Smaller content base and no contest integration.
+- Need more personalized recommendations and ranking.
+
+### Differentiation
+- Better suited for learners who want to write and organize solution notes.
+- A community-first app instead of just a problem archive.
+- Supports multi-platform native apps with Firebase-backed social features.
+
+## 11. Limitations
+
+### Current limitations
+- Feed may still have placeholder or dummy content in some screens.
+- Explore sorting is not fully implemented in Firestore queries.
+- Some routes and edit flows are not fully wired.
+- Post publishing and problem creation logic may be duplicated.
+- Firestore security rules may need alignment with current schema.
+
+### Technical limitations
+- No built-in code execution or validation engine.
+- No offline persistence or draft recovery yet.
+- No pagination on feeds, comments, or search results.
+- Potential performance issues when loading large collections.
+
+### Suggested mitigations
+- Add proper pagination and query limits for feeds/comments.
+- Standardize the repository/data access layer.
+- Finalize Firestore rules and map them to actual document fields.
+- Add tests and automated validation for new features.
+
+## 12. Summary
+
+ProblemSolversHub is a strong early-stage learning platform for sharing programming solutions. With a focused MVP, Firebase backing, and a modular Flutter architecture, it is well-positioned to grow into a fuller study and community app once feed, search, and collaboration features are completed.
 - `go_router`
 - `get_it`
 - `riverpod`, `flutter_riverpod`
@@ -326,7 +375,7 @@ Required env keys:
 - Hosting rewrites all routes to `/index.html`.
 - Firebase CLI deployment is the likely publish mechanism.
 
----
+---Limitations 
 
 ## 10. Recommendations
 
